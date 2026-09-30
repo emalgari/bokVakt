@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% set active = 'reports' %}
+{% block title %}{{ _("Rapporter") }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between;">
+  <h2 style="margin:0">{{ _("Rapporter — räkenskapsår") }} {{ fy }}</h2>
+  <form method="get" class="filters" style="margin:0;">
+    <label>{{ _("År") }}
+      <select name="year" onchange="this.form.submit()">
+        {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+</div>
+
+<div class="btn-row" style="margin-bottom:1rem;">
+  <a href="/rapporter/journal.csv?year={{ fy }}" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ {{ _("Bokföringsorder (CSV)") }}</a>
+  <a href="/rapporter/ne-bilaga.csv?year={{ fy }}" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ {{ _("NE-bilaga underlag (CSV)") }}</a>
+  <a href="/rapporter/resultat.pdf?year={{ fy }}" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ {{ _("Resultatrapport (PDF)") }}</a>
+  <a href="/moms" role="button" class="secondary outline">{{ _("Momsredovisning →") }}</a>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h4>{{ _("Resultaträkning") }} {{ fy }} ({{ _("underlag") }})</h4>
+    <table class="data">
+      <thead><tr><th>{{ _("Intäkter (exkl. moms)") }}</th><th class="num">{{ _("Belopp") }}</th></tr></thead>
+      <tbody>
+        {% for r in pl.revenue_rows %}
+        <tr><td>{{ r.label }}</td><td class="num">{{ r.amount | sek }}</td></tr>
+        {% else %}<tr><td class="muted">{{ _("Inga intäkter.") }}</td><td></td></tr>{% endfor %}
+        <tr class="total-row"><td>{{ _("Summa nettoomsättning") }}</td><td class="num">{{ pl.revenue_total | sek }}</td></tr>
+      </tbody>
+      <thead><tr><th>{{ _("Kostnader (exkl. avdragsgill moms)") }}</th><th class="num">{{ _("Belopp") }}</th></tr></thead>
+      <tbody>
+        {% for c in pl.expense_rows %}
+        <tr><td>{{ c.category }} <small class="muted">({{ c.count }} st)</small></td><td class="num">{{ c.cost | sek }}</td></tr>
+        {% else %}<tr><td class="muted">Inga kostnader.</td><td></td></tr>{% endfor %}
+        <tr class="total-row"><td>{{ _("Summa kostnader") }}</td><td class="num">{{ pl.expense_total | sek }}</td></tr>
+        <tr class="total-row"><td><b>{{ _("Årets resultat (före skatt)") }}</b></td>
+            <td class="num {{ 'pos' if pl.profit >= 0 else 'neg' }}"><b>{{ pl.profit | sek }}</b></td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="font-size:.85rem;">
+      {{ _("Memo (påverkar EJ resultatet): egna uttag") }} {{ pl.owner_withdrawals | money }},
+      {{ _("egna insättningar") }} {{ pl.owner_contributions | money }}.
+      {{ _("Moms: utgående") }} {{ pl.output_vat | money }}, {{ _("ingående") }} {{ pl.input_vat | money }},
+      {{ _("netto") }} {{ pl.net_vat | money }}. <b>{{ _("Ingen inkomstskatt beräknas i detta system.") }}</b>
+    </p>
+  </div>
+
+  <div class="card">
+    <h4>{{ _("Kostnadskategorier") }} {{ fy }}</h4>
+    <table class="data">
+      <thead><tr><th>{{ _("Kategori") }}</th><th class="num">{{ _("Kostnad") }}</th><th class="num">{{ _("Moms totalt") }}</th><th class="num">{{ _("Avdragsgill") }}</th><th class="num">{{ _("Antal") }}</th></tr></thead>
+      <tbody>
+        {% for c in categories %}
+        <tr>
+          <td>{{ c.category }}</td>
+          <td class="num">{{ c.cost | sek }}</td>
+          <td class="num">{{ c.vat | sek }}</td>
+          <td class="num">{{ c.deductible | sek }}</td>
+          <td class="num">{{ c.count }}</td>
+        </tr>
+        {% else %}<tr><td colspan="5" class="muted">{{ _("Inga utgifter.") }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3 style="margin-top:1.4rem;">{{ _("Månadsöversikt") }} {{ fy }}</h3>
+<div class="scroll-x card" style="padding:0;">
+  <table class="data">
+    <thead>
+      <tr><th>{{ _("Månad") }}</th><th class="num">{{ _("Intäkter exkl") }}</th><th class="num">{{ _("Intäkter inkl") }}</th>
+          <th class="num">{{ _("Utg. moms") }}</th><th class="num">{{ _("Kostnader") }}</th><th class="num">{{ _("Ing. moms") }}</th>
+          <th class="num">{{ _("Moms +/−") }}</th><th class="num">{{ _("Resultat") }}</th><th class="num">{{ _("Uttag") }}</th><th class="num">{{ _("Insättningar") }}</th><th>CSV</th></tr>
+    </thead>
+    <tbody>
+      {% for row in months %}
+      {% set t = row.totals %}
+      <tr>
+        <td>{{ month_name(row.calendar_month) }}</td>
+        <td class="num">{{ t.net_income | sek }}</td>
+        <td class="num">{{ t.gross_income | sek }}</td>
+        <td class="num">{{ t.output_vat | sek }}</td>
+        <td class="num">{{ t.expense_cost | sek }}</td>
+        <td class="num">{{ t.input_vat | sek }}</td>
+        <td class="num {{ 'neg' if t.net_vat > 0 else 'pos' if t.net_vat < 0 else '' }}">{{ t.net_vat | sek }}</td>
+        <td class="num {{ 'pos' if t.profit >= 0 else 'neg' }}">{{ t.profit | sek }}</td>
+        <td class="num muted">{{ t.owner_withdrawals | sek }}</td>
+        <td class="num muted">{{ t.owner_contributions | sek }}</td>
+        <td><a href="/rapporter/manad.csv?year={{ fy }}&month={{ row.calendar_month }}" class="small">⬇</a></td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>{{ _("Summa") }}</td>
+        <td class="num">{{ year_totals.net_income | sek }}</td>
+        <td class="num">{{ year_totals.gross_income | sek }}</td>
+        <td class="num">{{ year_totals.output_vat | sek }}</td>
+        <td class="num">{{ year_totals.expense_cost | sek }}</td>
+        <td class="num">{{ year_totals.input_vat | sek }}</td>
+        <td class="num">{{ year_totals.net_vat | sek }}</td>
+        <td class="num">{{ year_totals.profit | sek }}</td>
+        <td class="num">{{ year_totals.owner_withdrawals | sek }}</td>
+        <td class="num">{{ year_totals.owner_contributions | sek }}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p class="muted" style="margin-top:.6rem; font-size:.85rem;">
+  {{ _("CSV-exporterna öppnas korrekt i svensk Excel/LibreOffice (semikolon + BOM).") }}
+  {{ _("Bokföringsorder listar alla verifikat i datumordning; NE-bilaga underlag summerar omsättning, kostnader och resultat som stöd för inkomstdeklarationen (ingen skatteberäkning).") }}
+</p>
+{% endblock %}

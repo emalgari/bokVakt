@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% set active = 'owner' %}
+{% block title %}{{ _("Ägarfinanser") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Ägarfinanser — egna uttag & insättningar") }}</h2>
+
+<div class="flash flash-warning" style="background:#eef4fa; border-color:#8ab; color:#10314f;">
+  ℹ️ {{ _("Egna uttag och egna insättningar är privata transaktioner mellan dig och firman. De är inte företagets intäkter eller kostnader, påverkar inte resultatet och har ingen momseffekt.") }}
+  {{ _("Skatt på uttag hanteras i din privata inkomstdeklaration — systemet beräknar ingen inkomstskatt.") }}
+</div>
+
+<form method="get" class="filters">
+  <label>{{ _("År") }}
+    <select name="year" onchange="this.form.submit()">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+    </select>
+  </label>
+</form>
+
+<div class="grid3" style="margin-bottom:1rem;">
+  <div class="card"><h4>{{ _("Egna uttag") }} {{ fy }}</h4><div class="stat neg">{{ uttag | money }}</div></div>
+  <div class="card"><h4>{{ _("Egna insättningar") }} {{ fy }}</h4><div class="stat pos">{{ insattning | money }}</div></div>
+  <div class="card"><h4>{{ _("Netto") }} {{ fy }}</h4>
+    <div class="stat">{{ (insattning - uttag) | money }}</div>
+    <div class="stat-sub">{{ _("positivt = mer insatt än uttaget") }}</div></div>
+</div>
+
+<div class="grid2">
+  <div class="scroll-x card" style="padding:0;">
+    <table class="data">
+      <thead><tr><th>{{ _("Datum") }}</th><th>{{ _("Typ") }}</th><th class="num">{{ _("Belopp") }}</th><th>{{ _("Beskrivning") }}</th><th>Ref</th><th></th></tr></thead>
+      <tbody>
+        {% for t in txs %}
+        <tr>
+          <td>{{ t.tx_date | dsv }}</td>
+          <td>{% if t.tx_type == 'uttag' %}<span class="badge badge-unpaid">{{ _("Eget uttag") }}</span>
+              {% else %}<span class="badge badge-paid">{{ _("Insättning") }}</span>{% endif %}</td>
+          <td class="num">{{ t.amount | money }}</td>
+          <td>{{ t.description }}</td>
+          <td class="muted">{{ t.reference }}</td>
+          <td>
+            <form method="post" action="/agare/{{ t.id }}/radera" class="inline"
+                  onsubmit="return confirm('{{ _('Radera transaktionen?') }}');">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="contrast outline small-btn">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted" style="text-align:center; padding:1.5rem;">{{ _("Inga transaktioner i år.") }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4>{{ _("Registrera transaktion") }}</h4>
+    <form method="post" action="/agare/ny">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="grid2">
+        <div>
+          <label>{{ _("Typ") }} *</label>
+          <select name="tx_type" required>
+            <option value="uttag">{{ _("Eget uttag") }} ({{ _("pengar ut ur firman") }})</option>
+            <option value="insattning">{{ _("Egen insättning") }} ({{ _("pengar in i firman") }})</option>
+          </select>
+        </div>
+        <div><label>{{ _("Datum") }} *</label><input type="date" name="tx_date" value="{{ today }}" required></div>
+        <div><label>{{ _("Belopp (kr)") }} *</label><input name="amount" inputmode="decimal" required placeholder="0,00"></div>
+        <div><label>{{ _("Referens") }}</label><input name="reference" placeholder="{{ _('t.ex. överförings-id') }}"></div>
+      </div>
+      <label>{{ _("Beskrivning") }}</label>
+      <input name="description" placeholder="{{ _('T.ex. uttag till privat konto, löner ut till eget bruk') }}">
+      <button type="submit" style="margin-top:.6rem;">{{ _("Spara") }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

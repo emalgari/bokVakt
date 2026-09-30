@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active = 'data' %}
+{% block title %}{{ _("Data & säkerhet") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Data, backup & granskning") }}</h2>
+
+<div class="grid3" style="margin-bottom:1rem;">
+  <div class="card"><h4>{{ _("Databas") }}</h4>
+    <div class="stat">{{ "%.1f"|format(db_size / 1048576) }} MB</div>
+    <div class="stat-sub">{{ db_path }}</div></div>
+  <div class="card"><h4>{{ _("Uppladdade filer") }}</h4>
+    <div class="stat">{{ "%.1f"|format(upload_size / 1048576) }} MB</div>
+    <div class="stat-sub">{{ _("kvitton & logotyper (lokalt)") }}</div></div>
+  <div class="card"><h4>{{ _("Backuper") }}</h4>
+    <div class="stat">{{ backups | length }}</div>
+    <div class="stat-sub">{{ _("i data/backups/") }}</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h4>{{ _("Backup & återställning") }}</h4>
+    <form method="post" action="/data/backup" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <button type="submit" data-loading="{{ _('Skapar backup…') }}">💾 {{ _("Skapa backup nu") }}</button>
+    </form>
+    <a href="/data/download.db" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ {{ _("Ladda ner databasfil") }}</a>
+    <a href="/data/export.json" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ {{ _("Exportera allt (JSON)") }}</a>
+    <p class="muted" style="font-size:.85rem; margin-top:.6rem;">
+      {{ _("Backup = konsekvent SQLite-kopia (online backup API) + uploads + manifest med sha256.") }}
+      {{ _("Kan även köras från terminalen:") }} <code>python -m app.backup backup</code> / <code>scripts/backup.sh</code>.
+    </p>
+
+    <h4 style="margin-top:1rem;">{{ _("Återställ") }}</h4>
+    <table class="data">
+      <thead><tr><th>{{ _("Backup") }}</th><th>{{ _("Skapad") }}</th><th class="num">{{ _("Storlek") }}</th><th></th></tr></thead>
+      <tbody>
+        {% for b in backups %}
+        <tr>
+          <td>{{ b.name }}</td>
+          <td class="muted">{{ b.created_at }}</td>
+          <td class="num">{{ "%.1f"|format(b.total_bytes / 1048576) }} MB</td>
+          <td>
+            <form method="post" action="/data/restore" class="inline"
+                  onsubmit="return confirm('Återställ från {{ b.name }}? Nuvarande data ersätts (safety-kopia tas automatiskt). Du loggas ut.');">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <input type="hidden" name="name" value="{{ b.name }}">
+              <input type="hidden" name="confirm" value="">
+              <button type="submit" class="contrast outline small-btn"
+                      onclick="this.previousElementSibling.value='ÅTERSTÄLL'">{{ _("Återställ") }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">{{ _("Inga backuper ännu.") }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4>{{ _("Säkerhet & integritet") }}</h4>
+    <ul style="font-size:.9rem;">
+      <li>{{ _("All data lagras lokalt (SQLite + filer under data/). Ingen molntjänst, inga externa API:er, ingen telemetri.") }}</li>
+      <li>{{ _("Appen binder till 127.0.0.1 som standard — når bara din dator.") }}</li>
+      <li>{{ _("Inloggning med scrypt-hashat lösenord; sessionscookie (HttpOnly, SameSite).") }}</li>
+      <li>{{ _("CSRF-skydd på alla ändrande operationer.") }}</li>
+      <li>{{ _("Alla ändringar i bokföringsdata loggas i granskningsloggen (före/efter-värden).") }}</li>
+      <li>{{ _("Fastställda fakturor kan inte raderas eller ändras — endast krediteras (spårbarhet).") }}</li>
+    </ul>
+    <h4 style="margin-top:1rem;">{{ _("Senaste granskningshändelser") }}</h4>
+    <p><a href="/data/audit" role="button" class="secondary outline small-btn">{{ _("Öppna granskningsloggen →") }}</a></p>
+  </div>
+</div>
+{% endblock %}

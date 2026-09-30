@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; @bottom-center {
+      content: "{{ profile.company_name or "" }} · {{ period_text }} · Firmabok (lokalt underlag)";
+      font-family: "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #667; } }
+  body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-size: 9.5pt; color: #1a1d21; }
+  h1 { font-size: 15pt; color: #10314f; }
+  h2 { font-size: 11pt; color: #10314f; margin-top: 7mm; }
+  .meta { color: #445; margin-bottom: 5mm; }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #10314f; color: #fff; text-align: left; padding: 1.6mm 2mm; font-size: 8.5pt; }
+  td { padding: 1.4mm 2mm; border-bottom: 1px solid #e3e7ec; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: bold; border-top: 2px solid #10314f; }
+  .note { font-size: 8pt; color: #556; margin-top: 6mm; }
+</style>
+</head>
+<body>
+  <h1>{{ title }}</h1>
+  <div class="meta">
+    {{ profile.company_name or "Företagsnamn saknas" }}{% if profile.org_nr %} · Org.nr {{ profile.org_nr }}{% endif %}<br>
+    Period: {{ period_text }} · Skapad: {{ generated }}
+  </div>
+
+  <h2>{{ _("Resultat (underlag — ingen inkomstskatt beräknas)") }}</h2>
+  <table>
+    <thead><tr><th>{{ _("Intäkter exkl. moms") }}</th><th class="num">{{ _("Belopp") }}</th></tr></thead>
+    {% for r in pl.revenue_rows %}
+    <tr><td>{{ r.label }}</td><td class="num">{{ r.amount | money }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td>{{ _("Summa nettoomsättning") }}</td><td class="num">{{ pl.revenue_total | money }}</td></tr>
+  </table>
+  <br>
+  <table>
+    <thead><tr><th>{{ _("Kostnader (exkl. avdragsgill moms)") }}</th><th class="num">{{ _("Belopp") }}</th></tr></thead>
+    {% for c in pl.expense_rows %}
+    <tr><td>{{ c.category }} ({{ c.count }} st)</td><td class="num">{{ c.cost | money }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td>{{ _("Summa kostnader") }}</td><td class="num">{{ pl.expense_total | money }}</td></tr>
+    <tr class="total"><td>{{ _("Årets resultat före skatt") }}</td><td class="num">{{ pl.profit | money }}</td></tr>
+  </table>
+
+  <h2>{{ _("Moms (perioden)") }}</h2>
+  <table>
+    <tr><td>{{ _("Utgående moms") }}</td><td class="num">{{ pl.output_vat | money }}</td></tr>
+    <tr><td>{{ _("Ingående moms (avdragsgill)") }}</td><td class="num">{{ pl.input_vat | money }}</td></tr>
+    <tr class="total"><td>{{ _("Moms att betala (+) / få tillbaka (−)") }}</td><td class="num">{{ pl.net_vat | money }}</td></tr>
+  </table>
+
+  <h2>{{ _("Månadsöversikt") }}</h2>
+  <table>
+    <thead><tr><th>{{ _("Månad") }}</th><th class="num">{{ _("Intäkter exkl") }}</th><th class="num">{{ _("Kostnader") }}</th>
+      <th class="num">{{ _("Utg. moms") }}</th><th class="num">{{ _("Ing. moms") }}</th><th class="num">{{ _("Moms +/−") }}</th>
+      <th class="num">{{ _("Resultat") }}</th><th class="num">{{ _("Egna uttag") }}</th></tr></thead>
+    {% for row in months %}{% set t = row.totals %}
+    <tr>
+      <td>{{ month_name(row.calendar_month) }}</td>
+      <td class="num">{{ t.net_income | sek }}</td>
+      <td class="num">{{ t.expense_cost | sek }}</td>
+      <td class="num">{{ t.output_vat | sek }}</td>
+      <td class="num">{{ t.input_vat | sek }}</td>
+      <td class="num">{{ t.net_vat | sek }}</td>
+      <td class="num">{{ t.profit | sek }}</td>
+      <td class="num">{{ t.owner_withdrawals | sek }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="note">
+    {{ _("Egna uttag/insättningar är privata transaktioner och påverkar varken resultat eller moms.") }}
+    ({{ pl.owner_withdrawals | money }} / {{ pl.owner_contributions | money }})
+    {{ _("Momssiffror i deklarationsformat finns under Moms → exportera.") }}
+  </div>
+</body>
+</html>

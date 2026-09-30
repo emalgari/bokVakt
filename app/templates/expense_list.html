@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% set active = 'expenses' %}
+{% block title %}{{ _("Utgifter") }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between;">
+  <h2 style="margin:0">{{ _("Utgifter") }} {{ fy }}</h2>
+  <a href="/utgifter/ny" role="button">+ {{ _("Ny utgift") }}</a>
+</div>
+
+<form method="get" class="filters">
+  <label>{{ _("År") }}
+    <select name="year">
+      {% for y in [fy-1, fy, fy+1] %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Månad") }}
+    <select name="month">
+      <option value="">{{ _("Hela året") }}</option>
+      {% for m in range(1,13) %}<option value="{{ m }}" {{ 'selected' if month == m|string }}>{{ month_name(m) }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Kategori") }}
+    <select name="category">
+      <option value="">{{ _("Alla") }}</option>
+      {% for c in categories %}<option value="{{ c.name }}" {{ 'selected' if category == c.name }}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Sök") }}
+    <input type="search" name="q" value="{{ q }}" placeholder="{{ _('leverantör, beskrivning') }}">
+  </label>
+  <button type="submit" class="secondary">{{ _("Filtrera") }}</button>
+</form>
+
+<div class="scroll-x sticky-head card" style="padding:0;">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>{{ _("Datum") }}</th><th>{{ _("Leverantör") }}</th><th>{{ _("Kategori") }}</th><th>{{ _("Beskrivning") }}</th><th>{{ _("Moms") }}</th>
+        <th class="num">{{ _("Exkl.") }}</th><th class="num">{{ _("Moms kr") }}</th><th class="num">{{ _("Avdragsgill") }}</th>
+        <th class="num">{{ _("Inkl.") }}</th><th class="num">{{ _("Kostnad*") }}</th><th>{{ _("Kvitto") }}</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for x in expenses %}
+      <tr>
+        <td>{{ x.expense_date | dsv }}</td>
+        <td>{{ x.supplier }}</td>
+        <td>{{ x.category_name }}</td>
+        <td>{{ x.description[:50] }}</td>
+        <td><span class="muted">{{ x.vat_code }}</span> {{ x.vat_rate }}%</td>
+        <td class="num">{{ x.net_amount | sek }}</td>
+        <td class="num">{{ x.vat_amount | sek }}</td>
+        <td class="num">{{ x.deductible_vat | sek }}{% if x.deductible_vat < x.vat_amount %} ⚠{% endif %}</td>
+        <td class="num">{{ x.gross_amount | sek }}</td>
+        <td class="num">{{ x.book_cost | sek }}</td>
+        <td>{% if x.receipt_path %}<a href="/utgifter/{{ x.id }}/kvitto" target="_blank">📎 visa</a>{% else %}—{% endif %}</td>
+        <td>
+          <div class="btn-row" style="gap:.25rem;">
+            <a href="/utgifter/{{ x.id }}/redigera" role="button" class="secondary outline small-btn">✎</a>
+            <form method="post" action="/utgifter/{{ x.id }}/radera" class="inline"
+                  onsubmit="return confirm('{{ _('Radera utgiften (och ev. kvitto)?') }}');">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="contrast outline small-btn">🗑</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="12" class="muted" style="text-align:center; padding:1.5rem;">
+        Inga utgifter för filtret. <a href="/utgifter/ny">{{ _("Registrera den första →") }}</a>
+      </td></tr>
+      {% endfor %}
+      {% if expenses %}
+      <tr class="total-row">
+        <td colspan="5">{{ _("Summa") }} ({{ totals.count }} {{ _("rader") }})</td>
+        <td class="num">{{ totals.net | sek }}</td>
+        <td class="num">{{ totals.vat | sek }}</td>
+        <td class="num">{{ totals.deductible | sek }}</td>
+        <td class="num">{{ totals.gross | sek }}</td>
+        <td class="num">{{ totals.cost | sek }}</td>
+        <td colspan="2"></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+<p class="muted" style="margin-top:.6rem; font-size:.85rem;">
+  {{ _("Kostnad = belopp inkl. moms − avdragsgill moms. Icke avdragsgill moms blir en del av kostnaden.") }}
+  {{ _("Avdragsgill moms = ingående moms i momsdeklarationen (fält 48).") }}
+</p>
+
+<div class="card" style="margin-top:1rem; max-width:520px;">
+  <h4>{{ _("Ny kategori") }}</h4>
+  <form method="post" action="/utgifter/kategorier/ny" class="filters" style="margin:0;">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <input name="name" placeholder="Kategorinamn" required>
+    <input name="bas" placeholder="BAS-konto (valfritt)" style="max-width:130px;">
+    <button type="submit" class="secondary">{{ _("Lägg till") }}</button>
+  </form>
+</div>
+{% endblock %}

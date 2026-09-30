@@ -1,0 +1,192 @@
+<!doctype html>
+{#
+  LÖNESPECIFIKATION — SVENSKA ALLTID (samma regel som fakturan).
+  Alla belopp från databasen; alla satser är användarens egna inställningar.
+  Personnummer maskas på specen (lokalt lagringsbeslut).
+#}
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Lönespecifikation {{ slip.number or "UTKAST" }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 15mm 14mm 15mm;
+    @top-right {
+      content: "Sida " counter(page) " av " counter(pages);
+      font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+      font-size: 8pt; color: #000;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Liberation Sans", "DejaVu Sans", "Noto Sans", sans-serif;
+    font-size: 9pt; color: #000; margin: 0;
+  }
+  .page { max-width: 180mm; margin: 0 auto; }
+  @media screen {
+    body { background: #d9d9d9; padding: 10mm 0; }
+    .page {
+      width: 210mm; max-width: 210mm; margin: 0 auto;
+      padding: 15mm 15mm 14mm 15mm; background: #fff;
+      box-shadow: 0 1mm 5mm rgba(0, 0, 0, .35);
+    }
+  }
+  .draft-banner {
+    background: #fdd; border: 1px solid #c66; color: #900;
+    padding: 3px 6px; margin-bottom: 4px; font-weight: bold; font-size: 8.5pt;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  .top { width: 100%; margin-bottom: 6mm; }
+  .top td { vertical-align: top; padding: 0; }
+  .employer { font-size: 9.5pt; line-height: 1.45; }
+  .employer .name { font-size: 13pt; font-weight: bold; }
+  h1.doc { text-align: right; font-size: 15pt; margin: 0 0 2px 0; letter-spacing: .5px; }
+  .docnr { text-align: right; font-size: 10pt; margin-bottom: 4mm; }
+  .party-box { border: 1px solid #000; padding: 3mm; width: 82mm; margin-left: auto; }
+  .party-box .head { font-weight: bold; border-bottom: 1px solid #999; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
+  .meta { width: 100%; margin-bottom: 5mm; }
+  .meta td { padding: 1.2mm 2mm 1.2mm 0; vertical-align: top; font-size: 9pt; }
+  .meta .k { color: #333; white-space: nowrap; }
+  .items th { background: #eee; border: 1px solid #000; padding: 1.6mm 2mm; text-align: left; font-size: 8.5pt; }
+  .items td { border: 1px solid #000; padding: 1.6mm 2mm; font-size: 9pt; }
+  .items td.num, .items th.num { text-align: right; white-space: nowrap; }
+  .summary { width: 100%; margin-top: 5mm; }
+  .summary td { padding: 0; vertical-align: top; }
+  .sum-box { width: 82mm; margin-left: auto; border: 1px solid #000; }
+  .sum-box table td { padding: 1.6mm 2mm; border-bottom: 1px solid #ccc; font-size: 9pt; }
+  .sum-box tr.net td { font-weight: bold; font-size: 11pt; background: #eee; border-bottom: none; }
+  .note-left { width: 88mm; font-size: 8.5pt; color: #333; line-height: 1.5; }
+  .bank { margin-top: 4mm; border: 1px solid #000; background: #f4f4f4; padding: 2.5mm; width: 82mm; margin-left: auto; font-size: 9pt; }
+  .footer { margin-top: 8mm; border-top: 1px solid #999; padding-top: 2.5mm; font-size: 8pt; color: #333; width: 100%; }
+  .footer td { padding: 0 4mm 0 0; vertical-align: top; line-height: 1.5; }
+  .terms { margin-top: 4mm; font-size: 8.5pt; color: #333; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  {% if slip.status != "paid" %}
+  <div class="draft-banner">UTKAST — ej utbetald. Siffrorna är inte bokförda.</div>
+  {% endif %}
+
+  <table class="top">
+    <tr>
+      <td class="employer">
+        <div class="name">{{ profile.company_name }}</div>
+        {% if profile.address_line1 %}<div>{{ profile.address_line1 }}</div>{% endif %}
+        {% if profile.address_line2 %}<div>{{ profile.address_line2 }}</div>{% endif %}
+        {% if profile.postal_code or profile.city %}<div>{{ profile.postal_code }} {{ profile.city }}</div>{% endif %}
+        {% if profile.org_nr %}<div>Organisationsnr: {{ profile.org_nr }}</div>{% endif %}
+        {% if profile.phone %}<div>Telefon: {{ profile.phone }}</div>{% endif %}
+        {% if profile.email %}<div>E-post: {{ profile.email }}</div>{% endif %}
+      </td>
+      <td style="width:90mm;">
+        <h1 class="doc">LÖNESPECIFIKATION</h1>
+        <div class="docnr">Nr {{ slip.number or "UTKAST" }}</div>
+        <div class="party-box">
+          <div class="head">Mottagare (anställd)</div>
+          <div><b>{{ employee.name }}</b></div>
+          {% if employee_pnr_masked %}<div>Personnummer: {{ employee_pnr_masked }}</div>{% endif %}
+          {% if employee.address_line1 %}<div>{{ employee.address_line1 }}</div>{% endif %}
+          {% if employee.postal_code or employee.city %}<div>{{ employee.postal_code }} {{ employee.city }}</div>{% endif %}
+          {% if employee.phone %}<div>Telefon: {{ employee.phone }}</div>{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="meta">
+    <tr>
+      <td class="k">Löneperiod:</td><td><b>{{ period_label }}</b></td>
+      <td class="k">Utbetalningsdatum:</td>
+      <td>{% if slip.paid_date %}{{ slip.paid_date | dsv }}{% else %}—{% endif %}</td>
+      <td class="k">Anställningsform:</td><td>{{ employment_type_sv }}</td>
+    </tr>
+    {% if employee.tax_table_note %}
+    <tr>
+      <td class="k">Skattetabell:</td><td colspan="5">{{ employee.tax_table_note }}</td>
+    </tr>
+    {% endif %}
+    {% if slip.hours %}
+    <tr>
+      <td class="k">Antal timmar:</td><td>{{ slip.hours | qty2 }}</td>
+      <td class="k">Timlön:</td><td>{{ employee.hourly_rate | sek }} kr</td>
+      <td></td><td></td>
+    </tr>
+    {% endif %}
+    {% if slip.revenue_base is not none %}
+    <tr>
+      <td class="k">Omsättningsunderlag:</td><td>{{ slip.revenue_base | sek }} kr</td>
+      <td class="k">Provision:</td><td>{{ employee.revenue_pct }} %</td>
+      <td></td><td></td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <table class="items">
+    <thead>
+      <tr><th>Specifikation</th><th class="num">Belopp (kr)</th></tr>
+    </thead>
+    <tbody>
+      {% for ln in lines %}
+      <tr><td>{{ ln.label }}</td><td class="num">{{ ln.amount_dec | sek }}</td></tr>
+      {% endfor %}
+      <tr><td><b>Bruttoslön</b></td><td class="num"><b>{{ slip.gross | sek }}</b></td></tr>
+    </tbody>
+  </table>
+
+  <table class="summary">
+    <tr>
+      <td>
+        <div class="note-left">
+          Arbetsgivaravgifterna är arbetsgivarens kostnad och dras inte från
+          den anställdes lön. Satserna kommer från arbetsgivarens egna
+          inställningar i programmet{% if params_note %} ({{ params_note }}){% endif %}.
+          {% if slip.youth_reduction %}<br>Nedsatt ungdomsavgift har tillämpats enligt inställningarna.{% endif %}
+        </div>
+        {% if employee.contract_terms %}
+        <div class="terms"><b>Kontraktsvillkor:</b><br>{{ employee.contract_terms }}</div>
+        {% endif %}
+      </td>
+      <td>
+        <div class="sum-box">
+          <table>
+            <tr><td>Bruttoslön</td><td class="num">{{ slip.gross | sek }} kr</td></tr>
+            <tr><td>Arbetsgivaravgifter ({{ slip.ag_rate_used }}{% if slip.youth_reduction %} %, nedsatt tillämpad{% else %} %{% endif %})</td>
+                <td class="num">{{ slip.employer_contributions | sek }} kr</td></tr>
+            <tr><td>Skatteavdrag (A-skatt)</td><td class="num">−{{ slip.a_tax | sek }} kr</td></tr>
+            <tr class="net"><td>NETTOLÖN</td><td class="num">{{ slip.net | sek }} kr</td></tr>
+          </table>
+        </div>
+        <div class="bank">
+          <b>Utbetalas till:</b><br>
+          {% if employee.bank_account %}{{ employee.bank_account }}{% else %}Bankkonto ej angivet{% endif %}
+          <br>Mottagare: {{ employee.name }}
+          {% if slip.paid_date %}<br>Datum: {{ slip.paid_date | dsv }}{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="footer">
+    <tr>
+      <td>
+        <b>{{ profile.company_name }}</b><br>
+        {% if profile.address_line1 %}{{ profile.address_line1 }}<br>{% endif %}
+        {% if profile.postal_code %}{{ profile.postal_code }} {% endif %}{{ profile.city }}
+      </td>
+      <td>
+        {% if profile.org_nr %}Organisationsnr: {{ profile.org_nr }}<br>{% endif %}
+        {% if profile.f_skatt_registered %}Godkänd för F-skatt{% endif %}
+      </td>
+      <td>
+        Lönespecifikation — inte en faktura.<br>
+        Skapad: {{ created_at | dsv }}
+      </td>
+    </tr>
+  </table>
+
+</div>
+</body>
+</html>

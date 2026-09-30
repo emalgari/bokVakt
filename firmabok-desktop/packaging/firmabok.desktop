@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Firmabok
+Name[sv]=Firmabok
+GenericName=Bookkeeping for sole proprietorships
+GenericName[sv]=Bokföring för enskild firma
+Comment=Local-first bookkeeping, VAT and invoicing for Swedish enskild firma
+Comment[sv]=Lokal bokföring, moms och fakturering för svensk enskild firma
+Exec=firmabok-desktop
+Icon=firmabok
+Terminal=false
+Categories=Office;Finance;
+Keywords=bokföring;moms;faktura;enskild firma;accounting;vat;invoice;
+StartupNotify=true

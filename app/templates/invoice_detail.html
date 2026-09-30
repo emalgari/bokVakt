@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% set active = 'invoices' %}
+{% block title %}{{ _('Faktura') }} {{ invoice.number or _('(utkast)') }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between;">
+  <h2 style="margin:0">
+    {% if invoice.is_credit_note %}Kreditfaktura{% else %}Faktura{% endif %}
+    {{ invoice.number or "(utkast #" ~ invoice.id ~ ")" }}
+    <span class="badge badge-{{ invoice.status }}">
+      {{ {'draft':'Utkast','finalized':'Fastställd','sent':'Skickad','paid':'Betald','credited':'Krediterad'}[invoice.status] }}
+    </span>
+  </h2>
+  <div class="btn-row">
+    <a href="/fakturor/{{ invoice.id }}/pdf" role="button" target="_blank" data-loading="{{ _('Genererar…') }}">⬇ {{ _("Ladda ner PDF") }}</a>
+    <a href="/fakturor" role="button" class="secondary outline">← {{ _("Tillbaka") }}</a>
+  </div>
+</div>
+
+{% if invoice.status == 'draft' %}
+<div class="flash flash-warning">
+  Utkast har inget nummer ännu. Numret <b>{{ next_number }}</b> tilldelas när du fastställer fakturan.
+</div>
+{% endif %}
+{% if invoice.is_credit_note and invoice.credit_note_for %}
+<div class="flash flash-warning">Krediterar faktura <a href="/fakturor/{{ invoice.credit_note_for.id }}">{{ invoice.credit_note_for.number }}</a>.</div>
+{% endif %}
+
+<div class="grid2">
+  <div class="card">
+    <h4>{{ _("Grunddata") }}</h4>
+    {% if invoice.status == 'draft' %}
+    <form method="post" action="/fakturor/{{ invoice.id }}/metadata">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="grid2">
+        <div>
+          <label>{{ _("Fakturadatum") }}</label>
+          <input type="date" name="invoice_date" value="{{ invoice.invoice_date | dsv }}" required>
+        </div>
+        <div>
+          <label>{{ _("Leveransdatum") }}</label>
+          <input type="date" name="delivery_date" value="{{ (invoice.delivery_date or invoice.invoice_date) | dsv }}">
+        </div>
+        <div>
+          <label>{{ _("Kund") }}</label>
+          <select name="customer_id" required>
+            {% for c in customers %}
+            <option value="{{ c.id }}" {{ 'selected' if invoice.customer_id == c.id }}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>{{ _("Betalningsvillkor (dagar)") }}</label>
+          <input type="number" min="0" name="payment_terms_days" value="{{ invoice.payment_terms_days }}">
+        </div>
+        <div>
+          <label>{{ _("Vår referens") }}</label>
+          <input name="our_reference" value="{{ invoice.our_reference }}">
+        </div>
+        <div>
+          <label>{{ _("Er referens") }}</label>
+          <input name="customer_reference" value="{{ invoice.customer_reference }}">
+        </div>
+      </div>
+      <label>{{ _("Notering") }}</label>
+      <textarea name="notes" rows="2">{{ invoice.notes }}</textarea>
+      <button type="submit" class="secondary" style="margin-top:.5rem;">{{ _("Spara grunddata") }}</button>
+    </form>
+    {% else %}
+    <table class="data">
+      <tr><td>{{ _("Fakturadatum") }}</td><td><b>{{ invoice.invoice_date | dsv }}</b></td></tr>
+      <tr><td>{{ _("Leveransdatum") }}</td><td>{{ (invoice.delivery_date or invoice.invoice_date) | dsv }}</td></tr>
+      <tr><td>{{ _("Förfallodatum") }}</td><td><b>{{ invoice.due_date | dsv }}</b> ({{ invoice.payment_terms_days }} dagar)</td></tr>
+      <tr><td>{{ _("Kund") }}</td><td><b>{{ customer.name }}</b>{% if customer.org_nr %} ({{ customer.org_nr }}){% endif %}</td></tr>
+      <tr><td>OCR</td><td>{{ invoice.ocr }}</td></tr>
+      {% if invoice.our_reference %}<tr><td>{{ _("Vår ref") }}</td><td>{{ invoice.our_reference }}</td></tr>{% endif %}
+      {% if invoice.customer_reference %}<tr><td>Er ref</td><td>{{ invoice.customer_reference }}</td></tr>{% endif %}
+      {% if invoice.notes %}<tr><td>Notering</td><td style="white-space:pre-line;">{{ invoice.notes }}</td></tr>{% endif %}
+      <tr><td>{{ _("Fastställd") }}</td><td>{{ invoice.finalized_at.strftime('%Y-%m-%d %H:%M') if invoice.finalized_at else "—" }}</td></tr>
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h4>{{ _("Åtgärder") }}</h4>
+    <div class="btn-row" style="flex-direction:column; align-items:stretch;">
+      {% if invoice.status == 'draft' %}
+      <form method="post" action="/fakturor/{{ invoice.id }}/faststall"
+            onsubmit="return confirm('{{ _('Fastställ fakturan? Den får då ett löpande nummer och kan inte längre raderas eller ändras (korrigering sker med kreditfaktura).') }}');">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <label style="font-size:.85rem;">
+          <input type="checkbox" name="book_income" value="on" checked>
+          Bokför intäkten automatiskt (rekommenderas — annars måste du lägga in den under Intäkter)
+        </label>
+        <button type="submit" style="width:100%;">✓ Fastställ faktura (tilldela nummer {{ next_number }})</button>
+      </form>
+      <form method="post" action="/fakturor/{{ invoice.id }}/radera" class="inline"
+            onsubmit="return confirm('{{ _('Radera utkastet?') }}');">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <button type="submit" class="contrast outline" style="width:100%;">🗑 {{ _("Radera utkast") }}</button>
+      </form>
+      {% endif %}
+      {% if invoice.status == 'finalized' %}
+      <form method="post" action="/fakturor/{{ invoice.id }}/skicka" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <button type="submit" class="secondary" style="width:100%;">📤 {{ _("Markera som skickad") }}</button>
+      </form>
+      {% endif %}
+      {% if invoice.status in ['finalized', 'sent', 'paid'] and not invoice.is_credit_note %}
+      <form method="post" action="/fakturor/{{ invoice.id }}/betalning">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <div class="grid2">
+          <div><label>{{ _("Belopp (kr)") }}</label><input name="amount" inputmode="decimal" placeholder="{{ invoice.amount_to_pay | sek }}"></div>
+          <div><label>{{ _("Betalningsdatum") }}</label><input type="date" name="payment_date" value="{{ today }}"></div>
+        </div>
+        <button type="submit" class="secondary" style="width:100%;">💰 {{ _("Registrera betalning") }}</button>
+      </form>
+      {% endif %}
+      {% if invoice.status in ['finalized', 'sent', 'paid'] and not invoice.is_credit_note %}
+      <form method="post" action="/fakturor/{{ invoice.id }}/kreditera"
+            onsubmit="return confirm('{{ _('Skapa kreditfaktura för hela beloppet?') }}');">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <label>{{ _("Anledning") }}</label>
+        <input name="reason" placeholder="T.ex. fel fakturerat belopp, retur">
+        <button type="submit" class="contrast outline" style="width:100%;">↩ {{ _("Skapa kreditfaktura") }}</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <h4 style="margin-top:1rem;">{{ _("Bokförda intäkter (länkade)") }}</h4>
+    {% if linked_income %}
+    <table class="data">
+      {% for e in linked_income %}
+      <tr>
+        <td>{{ e.entry_date | dsv }}</td>
+        <td>{{ e.description[:40] }}</td>
+        <td class="num">{{ e.net_amount | money }}</td>
+        <td class="num">moms {{ e.vat_amount | money }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="font-size:.8rem;">{{ _("Dessa rader ingår i momsuppställningen — ingen dubbelräkning.") }}</p>
+    {% else %}
+    <p class="muted" style="font-size:.85rem;">
+      {% if invoice.status == 'draft' %}Intäkter bokförs vid fastställande (om kryssrutan är i).
+      {% else %}<b>⚠ {{ _("Ingen länkad intäkt.") }}</b> Lägg in motsvarande rader under
+      <a href="/intakter/ny">Intäkter</a> så att momsen kommer med i deklarationen.{% endif %}
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<h3 style="margin-top:1.2rem;">{{ _("Rader") }}</h3>
+{% if invoice.status == 'draft' %}
+<div class="card" style="margin-bottom:.8rem;">
+  <div class="grid3">
+    <div><span class="stat-sub">{{ _("Summa exkl. moms") }}</span><br><b>{{ invoice.net_total | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Moms") }}</span><br><b>{{ invoice.vat_total | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Summa inkl. moms") }}</span><br><b>{{ invoice.gross_total | money }}</b></div>
+    {% if invoice.rounding_amount %}
+    <div><span class="stat-sub">{{ _("Avrundning") }}</span><br><b>{{ invoice.rounding_amount | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Att betala") }}</span><br><b>{{ invoice.amount_to_pay | money }}</b></div>
+    {% endif %}
+  </div>
+</div>
+<form method="post" action="/fakturor/{{ invoice.id }}/rader" id="lines-form">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="card" style="padding:.6rem;">
+    <div class="scroll-x">
+    <table class="data lines-table">
+      <thead>
+        <tr><th style="width:70px;">{{ _("Art.nr") }}</th><th style="min-width:190px;">{{ _("Beskrivning") }} *</th><th style="width:80px;">{{ _("Antal") }}</th>
+            <th style="width:70px;">{{ _("Enhet") }}</th><th style="width:110px;">{{ _("À-pris exkl *") }}</th>
+            <th style="width:210px;">{{ _("Momskod") }}</th><th style="width:80px;">{{ _("Sats %") }}</th><th style="width:40px;"></th></tr>
+      </thead>
+      <tbody id="lines-body">
+        {% for l in invoice.lines %}
+        <tr>
+          <td><input name="arts" value="{{ l.article_no }}"></td>
+          <td><input name="descriptions" value="{{ l.description }}" required></td>
+          <td><input name="qtys" value="{{ l.quantity }}" inputmode="decimal"></td>
+          <td><input name="units" value="{{ l.unit }}"></td>
+          <td><input name="prices" value="{{ l.unit_price }}" inputmode="decimal" required></td>
+          <td><select name="codes" onchange="setRate(this)">
+            {% for c in sale_codes %}
+            <option value="{{ c.code }}" data-rate="{{ c.percent }}" {{ 'selected' if l.vat_code == c.code }}>{{ _(c.label_sv) }}</option>
+            {% endfor %}
+          </select></td>
+          <td><input name="rates" value="{{ l.vat_rate }}" inputmode="decimal"></td>
+          <td><button type="button" class="contrast outline small-btn" onclick="this.closest('tr').remove()">✕</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="btn-row" style="margin-top:.5rem;">
+      <button type="button" class="secondary outline" onclick="addLine()">+ {{ _("Lägg till rad") }}</button>
+      <button type="submit">{{ _("Spara rader") }}</button>
+    </div>
+  </div>
+</form>
+<template id="line-template">
+  <tr>
+    <td><input name="arts"></td>
+    <td><input name="descriptions" required></td>
+    <td><input name="qtys" value="1" inputmode="decimal"></td>
+    <td><input name="units" value="st"></td>
+    <td><input name="prices" inputmode="decimal" required></td>
+    <td><select name="codes" onchange="setRate(this)">
+      {% for c in sale_codes %}<option value="{{ c.code }}" data-rate="{{ c.percent }}">{{ _(c.label_sv) }}</option>{% endfor %}
+    </select></td>
+    <td><input name="rates" value="{{ profile.default_vat_rate }}" inputmode="decimal"></td>
+    <td><button type="button" class="contrast outline small-btn" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>
+</template>
+<script>
+function addLine(){ document.getElementById('lines-body').appendChild(document.getElementById('line-template').content.cloneNode(true)); }
+function setRate(sel){ sel.closest('tr').querySelector('input[name="rates"]').value = sel.options[sel.selectedIndex].getAttribute('data-rate'); }
+</script>
+{% else %}
+<div class="card" style="padding:0;">
+  <table class="data">
+    <thead><tr><th>#</th><th>{{ _("Art.nr") }}</th><th>{{ _("Beskrivning") }}</th><th class="num">{{ _("Antal") }}</th><th>{{ _("Enhet") }}</th>
+      <th class="num">{{ _("À-pris exkl") }}</th><th>{{ _("Momskod") }}</th><th class="num">{{ _("Sats") }}</th>
+      <th class="num">{{ _("Rad exkl") }}</th><th class="num">{{ _("Moms") }}</th><th class="num">{{ _("Rad inkl") }}</th></tr></thead>
+    <tbody>
+      {% for l in invoice.lines %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td>{{ l.article_no }}</td>
+        <td>{{ l.description }}</td>
+        <td class="num">{{ l.quantity | qty }}</td>
+        <td>{{ l.unit }}</td>
+        <td class="num">{{ l.unit_price | sek }}</td>
+        <td class="muted">{{ l.vat_code }}</td>
+        <td class="num">{{ l.vat_rate }}%</td>
+        <td class="num">{{ l.line_net | sek }}</td>
+        <td class="num">{{ l.line_vat | sek }}</td>
+        <td class="num">{{ l.line_gross | sek }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row"><td colspan="8">Summa exkl. moms</td><td class="num">{{ invoice.net_total | sek }}</td><td colspan="2"></td></tr>
+      <tr><td colspan="8">Moms</td><td></td><td class="num">{{ invoice.vat_total | sek }}</td><td></td></tr>
+      <tr class="total-row"><td colspan="8">Summa inkl. moms</td><td colspan="2"></td><td class="num">{{ invoice.gross_total | sek }}</td></tr>
+      {% if invoice.rounding_amount %}
+      <tr><td colspan="8">Avrundning</td><td colspan="2"></td><td class="num">{{ invoice.rounding_amount | sek }}</td></tr>
+      {% endif %}
+      {% if invoice.amount_paid %}
+      <tr><td colspan="8">Betalt</td><td colspan="2"></td><td class="num">−{{ invoice.amount_paid | sek }}</td></tr>
+      {% endif %}
+      <tr class="total-row"><td colspan="8">Att betala</td><td colspan="2"></td><td class="num">{{ invoice.amount_to_pay | sek }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+<div class="card" style="margin-top:1rem;">
+  <h4>{{ _("Momspecifikation") }}</h4>
+  <table class="data" style="max-width:420px;">
+    <thead><tr><th>{{ _("Sats/kod") }}</th><th class="num">{{ _("Underlag") }}</th><th class="num">{{ _("Moms") }}</th></tr></thead>
+    <tbody>
+      {% for b in breakdown %}
+      <tr><td>{{ b.rate }} % {% if b.code not in ['SE25','SE12','SE6'] %}<span class="muted">({{ b.code }})</span>{% endif %}</td>
+          <td class="num">{{ b.base | money }}</td><td class="num">{{ b.vat | money }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

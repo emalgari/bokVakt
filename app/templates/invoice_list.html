@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% set active = 'invoices' %}
+{% block title %}{{ _("Fakturor") }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between;">
+  <h2 style="margin:0">{{ _("Fakturor") }}</h2>
+  <div class="btn-row">
+    <span class="muted" style="font-size:.85rem;">{{ _("Nästa lediga nummer") }}: <b>{{ next_number }}</b></span>
+    <a href="/fakturor/ny" role="button">+ {{ _("Ny faktura") }}</a>
+  </div>
+</div>
+
+<form method="get" class="filters">
+  <label>{{ _("Status") }}
+    <select name="status" onchange="this.form.submit()">
+      <option value="">Alla</option>
+      {% for s in statuses %}
+      <option value="{{ s.value }}" {{ 'selected' if status == s.value }}>
+        {{ _({'draft':'Utkast','finalized':'Fastställd','sent':'Skickad','paid':'Betald','credited':'Krediterad'}[s.value]) }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Serieår") }}
+    <input name="year" value="{{ year }}" placeholder="t.ex. 2026" style="max-width:110px;">
+  </label>
+  <button type="submit" class="secondary">{{ _("Filtrera") }}</button>
+</form>
+
+<div class="scroll-x sticky-head card" style="padding:0;">
+  <table class="data">
+    <thead>
+      <tr><th>{{ _("Nummer") }}</th><th>{{ _("Datum") }}</th><th>{{ _("Förfaller") }}</th><th>{{ _("Kund") }}</th><th>{{ _("Typ") }}</th>
+          <th class="num">{{ _("Exkl. moms") }}</th><th class="num">{{ _("Moms") }}</th><th class="num">{{ _("Inkl. moms") }}</th>
+          <th>{{ _("Status") }}</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr>
+        <td><a href="/fakturor/{{ inv.id }}"><b>{{ inv.number or "(utkast)" }}</b></a></td>
+        <td>{{ inv.invoice_date | dsv }}</td>
+        <td>{{ inv.due_date | dsv }}</td>
+        <td>{{ inv.customer.name if inv.customer else "—" }}</td>
+        <td>{% if inv.is_credit_note %}<span class="badge badge-credited">{{ _("Kredit") }}</span>{% else %}Faktura{% endif %}</td>
+        <td class="num">{{ inv.net_total | sek }}</td>
+        <td class="num">{{ inv.vat_total | sek }}</td>
+        <td class="num">{{ inv.gross_total | sek }}</td>
+        <td><span class="badge badge-{{ inv.status }}">
+          {{ _({'draft':'Utkast','finalized':'Fastställd','sent':'Skickad','paid':'Betald','credited':'Krediterad'}[inv.status]) }}
+        </span></td>
+        <td><a href="/fakturor/{{ inv.id }}" role="button" class="secondary outline small-btn">{{ _("Öppna") }}</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="muted" style="text-align:center; padding:1.5rem;">
+        {{ _("Inga fakturor ännu.") }} <a href="/fakturor/ny">{{ _("Skapa den första →") }}</a>
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted" style="margin-top:.6rem; font-size:.85rem;">
+  {{ _("Nummerserien är löpande per räkenskapsår utan luckor: nummer tilldelas när fakturan fastställs.") }}
+  {{ _("Utkast kan raderas utan att serien påverkas. Fastställda fakturor kan aldrig raderas — korrigering sker med kreditfaktura.") }}
+</p>
+{% endblock %}

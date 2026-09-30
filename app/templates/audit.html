@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% set active = 'data' %}
+{% block title %}{{ _("Granskningslogg") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Granskningslogg (audit trail)") }}</h2>
+
+<form method="get" class="filters">
+  <label>{{ _("Entitet") }}
+    <select name="entity" onchange="this.form.submit()">
+      <option value="">Alla</option>
+      {% for e in entity_types %}
+      <option value="{{ e }}" {{ 'selected' if entity == e }}>{{ e }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Antal") }}
+    <select name="limit" onchange="this.form.submit()">
+      {% for n in [50, 200, 500, 1000] %}
+      <option value="{{ n }}" {{ 'selected' if limit == n }}>{{ n }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+<div class="scroll-x sticky-head card" style="padding:0;">
+  <table class="data">
+    <thead><tr><th>{{ _("Tid (UTC)") }}</th><th>{{ _("Användare") }}</th><th>{{ _("Åtgärd") }}</th><th>{{ _("Entitet") }}</th><th>{{ _("Sammanfattning") }}</th><th>{{ _("Ändrade fält") }}</th></tr></thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td class="muted">{{ e.ts.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>{{ e.username }}</td>
+        <td><span class="badge badge-{{ 'paid' if e.action in ['create','finalize','login','backup'] else 'draft' if e.action == 'update' else 'unpaid' }}">{{ e.action }}</span></td>
+        <td>{{ e.entity_type }}{% if e.entity_id %} #{{ e.entity_id }}{% endif %}</td>
+        <td>{{ e.summary }}</td>
+        <td style="max-width:380px;">
+          <details><summary class="muted" style="font-size:.8rem;">visa</summary>
+            <pre style="font-size:.72rem; max-height:200px; overflow:auto;">{{ e.changes }}</pre>
+          </details>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:1.5rem;">{{ _("Loggen är tom.") }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

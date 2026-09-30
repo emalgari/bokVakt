@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% set active = 'vat' %}
+{% block title %}{{ _("Moms") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Momsredovisning") }}</h2>
+
+<form method="get" class="filters">
+  <label>{{ _("Periodtyp") }}
+    <select name="kind" onchange="this.form.submit()">
+      {% for k, lbl in kind_labels.items() %}
+      <option value="{{ k }}" {{ 'selected' if k == kind }}>{{ _(lbl) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ _("År") }}
+    <select name="year" onchange="this.form.submit()">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Period") }}
+    <select name="number" onchange="this.form.submit()">
+      {% for n, lbl in period_labels %}<option value="{{ n }}" {{ 'selected' if n == num }}>{% if kind == 'year' %}{{ _(lbl) }}{% else %}{{ _(lbl) }} {{ n }}{% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit">Visa</button></noscript>
+</form>
+
+<div class="card" style="margin-bottom:1rem;">
+  <h4>Period {{ period.label }} ({{ period.start }} → {{ period.end }})
+    {% if report.locked %}<span class="badge badge-paid">{{ _("Deklarerad & låst") }} {{ report.filed_at.strftime('%Y-%m-%d') if report.filed_at else '' }}</span>
+    {% else %}<span class="badge badge-partial">{{ _("Utkast (ej låst)") }}</span>{% endif %}
+  </h4>
+  <p class="muted" style="font-size:.88rem; margin:.2rem 0 .6rem 0;">
+    📋 {{ _("Din registrering hos Skatteverket") }}: <b>{{ _(kind_labels[kind]) }}</b> ·
+    <b>{{ method_label }}</b> ·
+    {{ _("Deklaration lämnas senast") }} <b>{{ due_date }}</b> {{ _("(den 12 i andra månaden efter periodens slut)") }}.
+    {% if vat_method == 'bokslut' %}
+    <br>ℹ️ {{ _("Bokslutsmetoden: en försäljning redovisas i den period kunden betalat; obetalda poster redovisas senast i årets sista period.") }}
+    {{ _("Ingående moms dras per bokföringsdatum (förenklingsregeln vid omsättning under 1 Mkr)") }}
+    {% if not company.input_vat_on_payment %}.{% else %} — {{ _("din inställning använder i stället betalningsdatum för utgifter") }}.{% endif %}
+    {% endif %}
+  </p>
+  <div class="grid4">
+    <div><span class="stat-sub">{{ _("Utgående moms") }} ({{ _("exakt") }})</span><br><b>{{ decl.output_vat | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Ingående moms (avdragsgill)") }} ({{ _("exakt") }})</span><br><b>{{ decl.input_vat | money }}</b></div>
+    <div>
+      <span class="stat-sub">Moms att {{ "betala" if decl.net_vat_kronor >= 0 else "få tillbaka" }} (fält 49, hela kronor)</span><br>
+      <b class="stat {{ 'neg' if decl.net_vat_kronor > 0 else 'pos' }}">{{ decl.net_vat_kronor }} kr</b>
+    </div>
+    <div><span class="stat-sub">{{ _("Försäljning exkl. moms i perioden") }}</span><br><b>{{ decl.sales_base_total | money }}</b></div>
+  </div>
+  {% for w in decl.warnings %}<div class="flash flash-warning" style="margin-top:.6rem;">{{ w }}</div>{% endfor %}
+  <p class="muted" style="margin-top:.6rem; font-size:.85rem;">
+    {{ _("Moms beräknas som utgående moms på momspliktig försäljning minus avdragsgill ingående moms — aldrig på vinsten.") }}
+    {{ _("Fält 49 beräknas på avrundade krontal enligt Skatteverkets blankett.") }}
+  </p>
+</div>
+
+<div class="grid2">
+  <div class="card" style="padding:0;">
+   <div class="scroll-x">
+    <table class="data box-table" style="margin:0;">
+      <thead><tr><th>{{ _("Fält") }}</th><th>{{ _("Beskrivning") }}</th><th class="num">{{ _("Hela kronor") }}</th><th class="num">{{ _("Exakt (kr)") }}</th></tr></thead>
+      <tbody>
+        {% for r in boxes_rows %}
+        <tr class="{{ 'box-49' if r.box == '49' else ('zero' if r.kronor == 0 and r.exact == 0 else '') }}">
+          <td><b>{{ r.box }}</b></td>
+          <td>{{ _(r.label) }}</td>
+          <td class="num">{{ r.kronor }}</td>
+          <td class="num muted">{{ r.exact | sek }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:1rem;">
+      <h4>{{ _("Utgående moms per sats") }}</h4>
+      <table class="data">
+        <thead><tr><th>{{ _("Sats") }}</th><th class="num">{{ _("Underlag") }}</th><th class="num">{{ _("Moms") }}</th></tr></thead>
+        <tbody>
+          {% for b in decl.sales_by_rate %}
+          <tr><td>{{ b.rate }} %</td><td class="num">{{ b.base | sek }}</td><td class="num">{{ b.vat | sek }}</td></tr>
+          {% else %}<tr><td colspan="3" class="muted">{{ _("Ingen momspliktig försäljning i perioden.") }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      {% if decl.purchase_rc_by_rate %}
+      <h4 style="margin-top:.8rem;">{{ _("Inköp med omvänd skattskyldighet") }}</h4>
+      <table class="data">
+        <thead><tr><th>Sats</th><th class="num">Underlag</th><th class="num">{{ _("Utgående = Ingående") }}</th></tr></thead>
+        <tbody>
+          {% for b in decl.purchase_rc_by_rate %}
+          <tr><td>{{ b.rate }} %</td><td class="num">{{ b.base | sek }}</td><td class="num">{{ b.vat | sek }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      <h4 style="margin-top:.8rem;">{{ _("Ingående moms per källa") }}</h4>
+      <table class="data">
+        <tbody>
+          <tr><td>{{ _("Inköp i Sverige") }}</td><td class="num">{{ decl.input_vat_by_source.domestic | money }}</td></tr>
+          <tr><td>{{ _("Omvänd skattskyldighet (EU/Sverige)") }}</td><td class="num">{{ decl.input_vat_by_source.reverse_charge | money }}</td></tr>
+          <tr><td>{{ _("Import") }}</td><td class="num">{{ decl.input_vat_by_source['import'] | money }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h4>{{ _("Åtgärder") }}</h4>
+      <form method="post" action="/moms/spara">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="kind" value="{{ kind }}">
+        <input type="hidden" name="year" value="{{ fy }}">
+        <input type="hidden" name="number" value="{{ num }}">
+        <div class="btn-row">
+          <button type="submit" name="action" value="save" class="secondary">{{ _("Spara (olåst)") }}</button>
+          {% if not report.locked %}
+          <button type="submit" name="action" value="lock"
+                  onclick="return confirm('{{ _('Låsa perioden som deklarerad? Siffrorna fryses.') }}');">
+            Spara & lås (deklarerad)</button>
+          {% else %}
+          <button type="submit" name="action" value="unlock" class="contrast outline"
+                  onclick="return confirm('{{ _('Låsa upp perioden? Gör bara detta om du ska rätta deklarationen.') }}');">
+            Lås upp</button>
+          {% endif %}
+        </div>
+      </form>
+      <div class="btn-row" style="margin-top:.8rem;">
+        <a href="/moms/export.csv?kind={{ kind }}&year={{ fy }}&number={{ num }}" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ CSV ({{ _("fält för fält") }})</a>
+        <a href="/moms/export.pdf?kind={{ kind }}&year={{ fy }}&number={{ num }}" role="button" class="secondary outline" data-loading="{{ _('Genererar…') }}">⬇ PDF</a>
+      </div>
+      <p class="muted" style="font-size:.85rem;">
+        {{ _("Överför siffrorna till Skatteverkets e-tjänst Lämna momsdeklaration. Kontrollera alltid mot dina verifikat. Systemet lämnar inte in något automatiskt.") }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:1.5rem;">{{ _("Sparade perioder") }}</h3>
+<div class="scroll-x card" style="padding:0;">
+  <table class="data">
+    <thead><tr><th>{{ _("Period") }}</th><th>{{ _("Typ") }}</th><th>{{ _("Intervall") }}</th><th class="num">{{ _("Utgående") }}</th><th class="num">{{ _("Ingående") }}</th><th class="num">{{ _("Netto (fält 49, öre)") }}</th><th>{{ _("Status") }}</th><th>{{ _("Genererad") }}</th></tr></thead>
+    <tbody>
+      {% for r in stored_reports %}
+      <tr>
+        <td><a href="/moms?kind={{ r.period_kind }}&year={{ r.fiscal_year }}&number={{ r.period_number }}">{{ r.fiscal_year }} · {{ r.period_number }}</a></td>
+        <td>{{ _({'month':'Månad','quarter':'Kvartal','year':'Helår'}[r.period_kind]) }}</td>
+        <td class="muted">{{ r.start_date }} → {{ r.end_date }}</td>
+        <td class="num">{{ r.output_vat | sek }}</td>
+        <td class="num">{{ r.input_vat | sek }}</td>
+        <td class="num">{{ r.net_vat | sek }}</td>
+        <td>{% if r.locked %}<span class="badge badge-paid">{{ _("Låst") }}</span>{% else %}<span class="badge badge-partial">{{ _("Olåst") }}</span>{% endif %}</td>
+        <td class="muted">{{ r.generated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted" style="text-align:center;">{{ _("Inga sparade momsperioder ännu.") }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

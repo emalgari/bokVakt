@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% set active = 'invoices' %}
+{% block title %}{{ _("Ny faktura") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Ny faktura") }} ({{ _("Utkast") }})</h2>
+<p class="muted">{{ _("Nästa lediga nummer vid fastställande") }}: <b>{{ next_number }}</b> ({{ _("serien år") }} {{ invoice.invoice_date.year }}).</p>
+
+<form method="post" action="/fakturor/ny" id="inv-form">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="grid3">
+      <div>
+        <label for="invoice_date">{{ _("Fakturadatum") }} *</label>
+        <input type="date" id="invoice_date" name="invoice_date" required value="{{ invoice.invoice_date | dsv }}">
+      </div>
+      <div>
+        <label for="delivery_date">{{ _("Leveransdatum") }}</label>
+        <input type="date" id="delivery_date" name="delivery_date" value="{{ invoice.delivery_date | dsv if invoice.delivery_date else invoice.invoice_date | dsv }}">
+      </div>
+      <div>
+        <label for="customer_id">{{ _("Kund") }} *</label>
+        <select id="customer_id" name="customer_id" required>
+          <option value="">{{ _("— Välj kund —") }}</option>
+          {% for c in customers %}
+          <option value="{{ c.id }}" {{ 'selected' if invoice.customer_id == c.id }}>{{ c.name }}{% if c.org_nr %} ({{ c.org_nr }}){% endif %}</option>
+          {% endfor %}
+        </select>
+        <small class="muted">Ny kund? <a href="/kunder">{{ _("Lägg upp under Kunder") }}</a>.</small>
+      </div>
+      <div>
+        <label for="payment_terms_days">{{ _("Betalningsvillkor (dagar)") }}</label>
+        <input id="payment_terms_days" name="payment_terms_days" type="number" min="0" value="{{ invoice.payment_terms_days }}">
+      </div>
+      <div>
+        <label for="our_reference">{{ _("Vår referens") }}</label>
+        <input id="our_reference" name="our_reference" value="{{ invoice.our_reference }}">
+      </div>
+      <div>
+        <label for="customer_reference">{{ _("Er referens") }} / beställningsnr</label>
+        <input id="customer_reference" name="customer_reference" value="{{ invoice.customer_reference }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem; padding:.6rem;">
+    <h4>{{ _("Rader") }}</h4>
+    <div class="scroll-x">
+    <table class="data lines-table" id="lines">
+      <thead>
+        <tr>
+          <th style="width:70px;">{{ _("Art.nr") }}</th>
+          <th style="min-width:200px;">{{ _("Beskrivning") }} *</th>
+          <th style="width:80px;">{{ _("Antal") }}</th>
+          <th style="width:70px;">{{ _("Enhet") }}</th>
+          <th style="width:120px;">À-pris exkl. moms *</th>
+          <th style="width:220px;">Momskod</th>
+          <th style="width:80px;">{{ _("Sats %") }}</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="lines-body"></tbody>
+    </table>
+    </div>
+    <div class="btn-row" style="margin-top:.5rem;">
+      <button type="button" class="secondary outline" onclick="addLine()">+ {{ _("Lägg till rad") }}</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <label for="notes">{{ _("Notering") }}</label>
+    <textarea id="notes" name="notes" rows="2">{{ invoice.notes }}</textarea>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit">{{ _("Spara utkast") }}</button>
+    <a href="/fakturor" role="button" class="secondary outline">{{ _("Avbryt") }}</a>
+  </div>
+</form>
+
+<template id="line-template">
+  <tr>
+    <td><input name="arts" placeholder="t.ex. 11"></td>
+    <td><input name="descriptions" placeholder="{{ _('T.ex. Taxikörning juni') }}" required></td>
+    <td><input name="qtys" value="1" inputmode="decimal"></td>
+    <td><input name="units" value="st"></td>
+    <td><input name="prices" inputmode="decimal" placeholder="0,00" required></td>
+    <td>
+      <select name="codes" onchange="setRate(this)">
+        {% for c in sale_codes %}
+        <option value="{{ c.code }}" data-rate="{{ c.percent }}">{{ _(c.label_sv) }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input name="rates" value="{{ profile.default_vat_rate }}" inputmode="decimal"></td>
+    <td><button type="button" class="contrast outline small-btn" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>
+</template>
+
+<script>
+function addLine(){
+  const tpl = document.getElementById('line-template');
+  document.getElementById('lines-body').appendChild(tpl.content.cloneNode(true));
+}
+function setRate(sel){
+  const opt = sel.options[sel.selectedIndex];
+  sel.closest('tr').querySelector('input[name="rates"]').value = opt.getAttribute('data-rate');
+}
+for (let i = 0; i < {{ blank_lines or 3 }}; i++) addLine();
+</script>
+{% endblock %}

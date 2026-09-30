@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="{{ lang }}" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ _("Firmabok") }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/pico.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
+<a class="skip-link" href="#main-content">{{ _("Hoppa till innehåll") }}</a>
+<header class="site-header">
+  <nav class="navbar" aria-label="{{ _('Huvudmeny') }}">
+    <div class="nav-brand">
+      <a href="/dashboard" class="brand-link">Firmabok</a>
+      <small class="company-name">{{ company.company_name or _("Enskild firma") }}</small>
+    </div>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-menu">
+      <span class="nav-toggle-icon" aria-hidden="true"></span>
+      <span class="sr-only">{{ _("Meny") }}</span>
+    </button>
+
+    <ul id="main-menu" class="nav-menu">
+      <li><a href="/dashboard" class="{{ 'active' if active == 'dashboard' else '' }}" {{ 'aria-current="page"' if active == 'dashboard' else '' }}>{{ _("Dashboard") }}</a></li>
+      <li><a href="/intakter" class="{{ 'active' if active == 'income' else '' }}" {{ 'aria-current="page"' if active == 'income' else '' }}>{{ _("Intäkter") }}</a></li>
+      <li><a href="/utgifter" class="{{ 'active' if active == 'expenses' else '' }}" {{ 'aria-current="page"' if active == 'expenses' else '' }}>{{ _("Utgifter") }}</a></li>
+      <li><a href="/moms" class="{{ 'active' if active == 'vat' else '' }}" {{ 'aria-current="page"' if active == 'vat' else '' }}>{{ _("Moms") }}</a></li>
+      <li><a href="/fakturor" class="{{ 'active' if active == 'invoices' else '' }}" {{ 'aria-current="page"' if active == 'invoices' else '' }}>{{ _("Fakturor") }}</a></li>
+      <li><a href="/kunder" class="{{ 'active' if active == 'customers' else '' }}" {{ 'aria-current="page"' if active == 'customers' else '' }}>{{ _("Kunder") }}</a></li>
+      <li><a href="/agare" class="{{ 'active' if active == 'owner' else '' }}" {{ 'aria-current="page"' if active == 'owner' else '' }}>{{ _("Ägare") }}</a></li>
+      <li><a href="/rapporter" class="{{ 'active' if active == 'reports' else '' }}" {{ 'aria-current="page"' if active == 'reports' else '' }}>{{ _("Rapporter") }}</a></li>
+      <li><a href="/installningar" class="{{ 'active' if active == 'settings' else '' }}" {{ 'aria-current="page"' if active == 'settings' else '' }}>{{ _("Inställningar") }}</a></li>
+      <li><a href="/data" class="{{ 'active' if active == 'data' else '' }}" {{ 'aria-current="page"' if active == 'data' else '' }}>{{ _("Data") }}</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <div class="lang-toggle" role="group" aria-label="{{ _('Språk') }}">
+        <a href="/lang?lang=sv&next={{ request.url.path }}" lang="sv" hreflang="sv"
+           class="{{ 'on' if lang == 'sv' else '' }}"
+           aria-pressed="{{ 'true' if lang == 'sv' else 'false' }}"
+           title="Svenska">SV</a>
+        <a href="/lang?lang=en&next={{ request.url.path }}" lang="en" hreflang="en"
+           class="{{ 'on' if lang == 'en' else '' }}"
+           aria-pressed="{{ 'true' if lang == 'en' else 'false' }}"
+           title="English">EN</a>
+      </div>
+      {% if csrf_token %}
+      <form method="post" action="/logout" class="logout-form">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <button type="submit" class="contrast outline small-btn">{{ _("Logga ut") }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </nav>
+</header>
+
+{% if simplified_mode %}
+<div class="container-fluid">
+  <div class="banner-danger" role="alert">
+    {% if lang == 'en' %}
+    ⚠️ <strong>SIMPLIFIED MODE (NOT COMPLIANT):</strong> the dashboard VAT figure is
+    <strong>not</strong> according to Swedish VAT law and must <strong>not</strong> be used for
+    Skatteverket. The VAT module (/moms) always shows correct figures. Turn the mode off in
+    <a href="/installningar">Settings</a>.
+    {% else %}
+    ⚠️ <strong>FÖRENKLAT LÄGE (EJ KORREKT):</strong> momsberäkningen på dashboarden är
+    <strong>inte</strong> enligt svenska momsregler och får <strong>inte</strong> användas till
+    Skatteverket. Momsmodulen (/moms) visar alltid korrekta siffror. Stäng av läget i
+    <a href="/installningar">Inställningar</a>.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<main class="container" id="main-content">
+  {% for f in flashes %}
+  <div class="flash flash-{{ f.category }}" role="status" aria-live="polite">{{ f.message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="container">
+  <small>
+    {{ _("Firmabok 1.0.0 — lokal bokföring för enskild firma. All data stannar på din dator.") }}
+    {{ _("Moms beräknas på försäljning, aldrig på vinst.") }}
+    <a href="/data/audit">{{ _("Granskningslogg") }}</a>
+  </small>
+</footer>
+</body>
+</html>

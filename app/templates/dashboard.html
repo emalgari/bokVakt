@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}{{ _("Dashboard") }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between; margin-bottom:1rem;">
+  <h2 style="margin:0">{{ _("Dashboard — räkenskapsår") }} {{ fy }}</h2>
+  <form method="get" class="filters" style="margin:0">
+    <label>{{ _("År") }}
+      <select name="year" onchange="this.form.submit()">
+        {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>{{ _("Månad") }}
+      <select name="month" onchange="this.form.submit()">
+        {% for m in range(1,13) %}
+        <option value="{{ m }}" {{ 'selected' if m == cur_month }}>{{ month_name(m) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+</div>
+
+{% for w in warnings %}
+<div class="flash flash-warning">{{ w }}</div>
+{% endfor %}
+
+{% if simplified %}
+<div class="card" style="border:2px solid #c66; background:#fff5f5; margin-bottom:1rem;">
+  <h4 style="color:#900">⚠️ {{ _("Förenklat läge (EJ KORREKT — INTE för Skatteverket)") }}</h4>
+  <p>
+    Vinst {{ fy }}: <b>{{ simplified.profit | money }}</b> → "moms" 25 % av vinsten:
+    <b style="color:#900">{{ simplified.fake_vat | money }}</b>
+  </p>
+  <p class="muted">
+    {{ _("Svensk moms beräknas på momspliktig försäljning, inte på vinst.") }} Siffran ovan är
+    medvetet felaktig och endast avsedd som grov privat fingervisning. Använd
+    <a href="/moms">Moms-modulen</a> för korrekta deklarationssiffror.
+  </p>
+</div>
+{% endif %}
+
+<div class="grid4" style="margin-bottom:1rem;">
+  <div class="card">
+    <h4>{{ _("Nettoomsättning") }} {{ fy }}</h4>
+    <div class="stat">{{ year_totals.net_income | money }}</div>
+    <div class="stat-sub">{{ _("exkl. moms") }} · {{ _("brutto") }} {{ year_totals.gross_income | money }} {{ _("inkl. moms") }}</div>
+  </div>
+  <div class="card">
+    <h4>{{ _("Kostnader") }} {{ fy }}</h4>
+    <div class="stat">{{ year_totals.expense_cost | money }}</div>
+    <div class="stat-sub">{{ _("exkl. avdragsgill moms") }}</div>
+  </div>
+  <div class="card">
+    <h4>{{ _("Resultat") }} {{ fy }}</h4>
+    <div class="stat {{ 'pos' if year_totals.profit >= 0 else 'neg' }}">{{ year_totals.profit | money }}</div>
+    <div class="stat-sub">{{ _("nettoomsättning − kostnader (före skatt)") }}</div>
+  </div>
+  <div class="card">
+    <h4>{{ _("Moms") }} {{ fy }}</h4>
+    <div class="stat {{ 'neg' if year_totals.net_vat > 0 else 'pos' }}">
+      {{ year_totals.net_vat | money }}
+    </div>
+    <div class="stat-sub">
+      {{ _("utgående") }} {{ year_totals.output_vat | sek }} − {{ _("ingående") }} {{ year_totals.input_vat | sek }}
+      = {{ _("att betala") if year_totals.net_vat > 0 else _("att få tillbaka") if year_totals.net_vat < 0 else _("noll") }}
+    </div>
+  </div>
+</div>
+
+{% if cur_period %}
+<div class="card" style="margin-bottom:1rem;">
+  <h4>{{ _("Aktuell momsperiod") }} ({{ _(vat_period_kind == 'month' and 'månadsvis' or vat_period_kind == 'quarter' and 'kvartalsvis' or 'årsvis') }}): {{ cur_period.label }} ({{ cur_period.start }} → {{ cur_period.end }})</h4>
+  {% if vat_method == 'bokslut' %}
+  <p class="muted" style="font-size:.85rem; margin:.2rem 0 .5rem 0;">
+    Bokslutsmetoden (din registrering): siffrorna nedan följer <b>betalningsdatum</b> —
+    obetalda fakturor redovisas först när de betalas (senast vid bokslutet).
+    Månadstabellen ovan visar bokförd moms per intäktsdatum.
+  </p>
+  {% endif %}
+  <div class="grid4">
+    <div><span class="stat-sub">{{ _("Utgående moms") }}</span><br><b>{{ cur_decl.output_vat | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Ingående moms (avdragsgill)") }}</span><br><b>{{ cur_decl.input_vat | money }}</b></div>
+    <div><span class="stat-sub">{{ _("Att betala") if cur_decl.net_vat_kronor >= 0 else _("Att få tillbaka") }} ({{ _("fält") }} 49)</span><br>
+      <b class="{{ 'neg' if cur_decl.net_vat_kronor > 0 else 'pos' }}">{{ cur_decl.net_vat_kronor }} kr</b></div>
+    <div><span class="stat-sub">Status</span><br>
+      {% if period_filed %}<span class="badge badge-paid">{{ _("Deklarerad & låst") }}</span>
+      {% else %}<span class="badge badge-partial">{{ _("Ej låst") }}</span>{% endif %}
+      <a href="/moms?kind={{ vat_period_kind }}" style="margin-left:.5rem">{{ _("Öppna moms →") }}</a></div>
+  </div>
+</div>
+{% endif %}
+
+<h3>{{ _("Månadsöversikt") }} {{ fy }}</h3>
+<div class="scroll-x card" style="padding:0; margin-bottom:1.5rem;">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>{{ _("Månad") }}</th>
+        <th class="num">{{ _("Intäkter exkl.") }}</th>
+        <th class="num">{{ _("Utg. moms") }}</th>
+        <th class="num">{{ _("Kostnader") }}</th>
+        <th class="num">{{ _("Ing. moms") }}</th>
+        <th class="num">{{ _("Moms +/−") }}</th>
+        <th class="num">{{ _("Resultat") }}</th>
+        <th class="num">{{ _("Egna uttag") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in months %}
+      {% set t = row.totals %}
+      <tr>
+        <td><a href="/intakter?year={{ fy }}&month={{ row.calendar_month }}">{{ month_name(row.calendar_month) }}</a></td>
+        <td class="num">{{ t.net_income | sek }}</td>
+        <td class="num">{{ t.output_vat | sek }}</td>
+        <td class="num">{{ t.expense_cost | sek }}</td>
+        <td class="num">{{ t.input_vat | sek }}</td>
+        <td class="num {{ 'neg' if t.net_vat > 0 else 'pos' if t.net_vat < 0 else '' }}">{{ t.net_vat | sek }}</td>
+        <td class="num {{ 'pos' if t.profit >= 0 else 'neg' }}">{{ t.profit | sek }}</td>
+        <td class="num muted">{{ t.owner_withdrawals | sek }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>{{ _("Summa") }} {{ fy }}</td>
+        <td class="num">{{ year_totals.net_income | sek }}</td>
+        <td class="num">{{ year_totals.output_vat | sek }}</td>
+        <td class="num">{{ year_totals.expense_cost | sek }}</td>
+        <td class="num">{{ year_totals.input_vat | sek }}</td>
+        <td class="num">{{ year_totals.net_vat | sek }}</td>
+        <td class="num">{{ year_totals.profit | sek }}</td>
+        <td class="num">{{ year_totals.owner_withdrawals | sek }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h4>{{ _("Veckointäkter") }} — {{ month_name(cur_month) }} {{ today.year }}</h4>
+    {% if weeks %}
+    <table class="data">
+      <thead><tr><th>{{ _("Vecka") }}</th><th>{{ _("Period") }}</th><th class="num">{{ _("Antal") }}</th><th class="num">{{ _("Exkl. moms") }}</th><th class="num">{{ _("Moms") }}</th><th class="num">{{ _("Inkl. moms") }}</th></tr></thead>
+      <tbody>
+        {% for w in weeks %}
+        <tr>
+          <td>v{{ w.week }}</td>
+          <td class="muted">{{ w.first }} → {{ w.last }}</td>
+          <td class="num">{{ w.count }}</td>
+          <td class="num">{{ w.net | sek }}</td>
+          <td class="num">{{ w.vat | sek }}</td>
+          <td class="num">{{ w.gross | sek }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">{{ _("Inga intäkter registrerade denna månad.") }}</p>
+    {% endif %}
+    <div class="btn-row">
+      <a href="/intakter/ny" role="button">{{ _("+ Registrera intäkt") }}</a>
+      <a href="/utgifter/ny" role="button" class="secondary">{{ _("+ Registrera utgift") }}</a>
+    </div>
+  </div>
+  <div class="card">
+    <h4>{{ _("Snabbfakta") }}</h4>
+    <table class="data">
+      <tr><td>{{ _("Företag") }}</td><td><b>{{ company.company_name or "— (fyll i Inställningar)" }}</b></td></tr>
+      <tr><td>{{ _("Org.nr") }}</td><td>{{ company.org_nr or "—" }}</td></tr>
+      <tr><td>{{ _("Momsreg.nr") }}</td><td>{{ company.vat_number or "—" }}</td></tr>
+      <tr><td>{{ _("F-skatt") }}</td><td>{{ company.f_skatt_text if company.f_skatt_registered else _("Ej registrerat") }}</td></tr>
+      <tr><td>{{ _("Räkenskapsår") }}</td><td>{{ _("kalenderår") if company.fiscal_year_start_month == 1 else _("brutet, start månad") ~ " " ~ company.fiscal_year_start_month }}</td></tr>
+      <tr><td>{{ _("Momsperiod") }}</td><td>{{ company.vat_period }}</td></tr>
+      <tr><td>{{ _("Obetalda fakturor") }}</td><td><a href="/fakturor?status=finalized">{{ _("se listan →") }}</a></td></tr>
+    </table>
+  </div>
+</div>
+{% endblock %}

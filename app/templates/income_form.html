@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% set active = 'income' %}
+{% block title %}{{ _('Ny intäkt') if is_new else _('Redigera intäkt') }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _('Registrera intäkt') if is_new else _('Redigera intäkt') ~ ' #' ~ entry.id }}</h2>
+{% if not is_new and entry.invoice_id %}
+<div class="flash flash-warning">
+  Intäkten är länkad till <a href="/fakturor/{{ entry.invoice_id }}">faktura {{ entry.invoice_ref }}</a>.
+  Ändringar här är begränsade — korrigera i stället via kreditfaktura.
+</div>
+{% endif %}
+
+<div class="card" style="max-width:820px;">
+<form method="post" action="{{ '/intakter/ny' if is_new else '/intakter/' ~ entry.id ~ '/redigera' }}">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="grid2">
+    <div>
+      <label for="entry_date">{{ _("Datum") }} *</label>
+      <input type="date" id="entry_date" name="entry_date" required value="{{ entry.entry_date | dsv }}">
+    </div>
+    <div>
+      <label for="customer_id">{{ _("Kund (register)") }}</label>
+      <select id="customer_id" name="customer_id">
+        <option value="">{{ _("— Ingen / engångskund —") }}</option>
+        {% for c in customers %}
+        <option value="{{ c.id }}" {{ 'selected' if entry.customer_id == c.id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="customer_name">{{ _("Kundnamn (om ej i registret)") }}</label>
+      <input id="customer_name" name="customer_name" value="{{ entry.customer_name }}" placeholder="T.ex. Acme AB">
+    </div>
+    <div>
+      <label for="invoice_ref">{{ _("Fakturareferens") }}</label>
+      <input id="invoice_ref" name="invoice_ref" value="{{ entry.invoice_ref }}" placeholder="t.ex. 2026-0001 eller kundens ref">
+    </div>
+  </div>
+  <label for="description">{{ _("Beskrivning") }}</label>
+  <input id="description" name="description" value="{{ entry.description }}" placeholder="{{ _('T.ex. Konsulttjänster vecka 12') }}">
+
+  <div class="grid3">
+    <div>
+      <label for="vat_code">{{ _("Momskod") }} *</label>
+      <select id="vat_code" name="vat_code" onchange="syncRate(this)">
+        {% for c in sale_codes %}
+        <option value="{{ c.code }}" data-rate="{{ c.percent }}" data-dom="{{ '1' if c.domestic_sale_vat else '0' }}"
+                {{ 'selected' if entry.vat_code == c.code }}>{{ _(c.label_sv) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="vat_rate">{{ _("Momssats %") }}</label>
+      <input id="vat_rate" name="vat_rate" inputmode="decimal" value="{{ entry.vat_rate }}" placeholder="25">
+    </div>
+    <div>
+      <label>{{ _("Ange belopp som") }}</label>
+      <select name="amount_mode">
+        <option value="net" {{ 'selected' if mode == 'net' }}>{{ _("Exkl. moms (netto)") }}</option>
+        <option value="gross" {{ 'selected' if mode == 'gross' }}>{{ _("Inkl. moms (brutto)") }}</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label for="amount">{{ _("Belopp (kr)") }} *</label>
+      <input id="amount" name="amount" inputmode="decimal" required
+             value="{{ entry.net_amount if is_new == false else '' }}" placeholder="0,00">
+      <small class="muted">{{ _("Moms och totalsumma räknas automatiskt (halvöresavrundning per rad).") }}</small>
+    </div>
+    <div>
+      <label for="payment_status">{{ _("Betalstatus") }}</label>
+      <select id="payment_status" name="payment_status">
+        <option value="unpaid" {{ 'selected' if entry.payment_status == 'unpaid' }}>{{ _("Obetald") }}</option>
+        <option value="paid" {{ 'selected' if entry.payment_status == 'paid' }}>{{ _("Betald") }}</option>
+        <option value="partial" {{ 'selected' if entry.payment_status == 'partial' }}>{{ _("Delbetald") }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="payment_date">{{ _("Betalningsdatum") }}</label>
+      <input type="date" id="payment_date" name="payment_date" value="{{ entry.payment_date | dsv }}">
+    </div>
+  </div>
+  <label for="notes">{{ _("Anteckningar") }}</label>
+  <textarea id="notes" name="notes" rows="2">{{ entry.notes }}</textarea>
+
+  <div class="btn-row" style="margin-top:1rem;">
+    <button type="submit">{{ _('Spara intäkt') if is_new else _('Spara ändringar') }}</button>
+    <a href="/intakter" role="button" class="secondary outline">{{ _("Avbryt") }}</a>
+  </div>
+</form>
+</div>
+
+<script>
+function syncRate(sel){
+  const opt = sel.options[sel.selectedIndex];
+  const rate = opt.getAttribute('data-rate');
+  const dom = opt.getAttribute('data-dom');
+  const rateInput = document.getElementById('vat_rate');
+  if (dom === '1') { rateInput.value = rate; rateInput.disabled = false; }
+  else { rateInput.value = '0'; rateInput.disabled = true; }
+}
+document.addEventListener('DOMContentLoaded', function(){ syncRate(document.getElementById('vat_code')); });
+</script>
+{% endblock %}

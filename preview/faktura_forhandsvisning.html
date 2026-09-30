@@ -1,0 +1,244 @@
+<!doctype html>
+
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Faktura 2026-0001</title>
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 15mm 14mm 15mm;
+    @top-right {
+      content: "Sida " counter(page) " av " counter(pages);
+      font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+      font-size: 8pt; color: #000;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Liberation Sans", "DejaVu Sans", "Noto Sans", sans-serif;
+    font-size: 9pt; color: #000; margin: 0;
+  }
+  /* Innehållet hålls alltid innanför marginalen: 180 mm = 210 mm − 2×15 mm.
+     I PDF fyller .page exakt sidans innehållsyta; på skärm visas ett
+     A4-ark med samma marginaler (WYSIWYG). */
+  .page { max-width: 180mm; margin: 0 auto; }
+  @media screen {
+    body { background: #d9d9d9; padding: 10mm 0; }
+    .page {
+      width: 210mm; max-width: 210mm; margin: 0 auto;
+      padding: 15mm 15mm 14mm 15mm; background: #fff;
+      box-shadow: 0 1mm 5mm rgba(0, 0, 0, .35);
+    }
+  }
+  /* Smala fönster (t.ex. förhandsvisningen): undvik horisontell scrollning */
+  @media screen and (max-width: 215mm) {
+    body { background: #fff; padding: 0; }
+    .page { width: auto; max-width: 210mm; padding: 10mm; box-shadow: none; }
+  }
+  td, th { overflow-wrap: break-word; }
+  .draft-banner, .warn {
+    background: #fdd; border: 1px solid #c66; color: #900;
+    padding: 3px 6px; margin-bottom: 4px; font-weight: bold; font-size: 8.5pt;
+  }
+  .warn { background: #fff6dd; border-color: #d90; color: #7a5000; font-weight: normal; }
+
+  /* ---- header (table layout: mest robust i WeasyPrint) ---- */
+  table.head { width: 100%; border-collapse: collapse; margin-bottom: 8mm; }
+  table.head td { vertical-align: top; padding: 0; }
+  .head .company { font-size: 13pt; font-weight: bold; padding-top: 1mm; }
+  .head .titlecol { width: 45%; }
+  .head h1 { font-size: 13pt; font-weight: bold; margin: 0 0 1.5mm 0; }
+  .head table.num { border-collapse: collapse; width: 70%; }
+  .head table.num td { padding: 0; vertical-align: top; font-size: 8.5pt; }
+  .head table.num td.lbl { font-weight: bold; }
+  .head table.num td.val { text-align: right; width: 22mm; }
+
+  .customer-box {
+    width: 47%; margin-left: auto; margin-bottom: 2mm;
+    border: 1px solid #000; padding: 2.5mm 3mm;
+    font-size: 8.5pt; line-height: 1.5;
+  }
+  .customer-box .cname { font-weight: normal; }
+
+  table.meta { border-collapse: collapse; margin-bottom: 5mm; }
+  table.meta td { padding: .6mm 0; vertical-align: top; font-size: 8.5pt; }
+  table.meta td.lbl { font-weight: bold; width: 25mm; }
+  table.meta td.val { width: 68mm; }
+
+  /* ---- the big bordered sheet box: ONE table (WeasyPrint-säkert) ----
+     Tabellen har fast höjd; en distansrad med beräknad mm-höjd absorberar
+     allt överflöd så att summor + betalningsruta alltid hamnar längst ned
+     — utan position:absolute/flex/procenthöjder. */
+  table.sheet {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid #000;
+    height: 172mm;
+    margin-bottom: 6mm;
+  }
+  table.sheet th {
+    border-bottom: 1px solid #000;
+    text-align: right; padding: 1.6mm 2mm 1.6mm 3mm; font-size: 8.5pt; font-weight: bold;
+  }
+  table.sheet th.left, table.sheet td.left { text-align: left; }
+  table.sheet td {
+    padding: 1.6mm 2mm 1.6mm 3mm; text-align: right; font-size: 8.5pt;
+    font-variant-numeric: tabular-nums; vertical-align: top;
+  }
+  table.sheet tr.spacer td { padding: 0; border: none; }
+  table.sheet tr.bottomrow > td { vertical-align: bottom; padding: 0; border: none; }
+  .sums { width: 100%; border-collapse: collapse; padding: 0; }
+  .sums td { padding: .8mm 0; font-size: 8.5pt; border: none; }
+  .sums td.lbl { font-weight: bold; text-align: left; }
+  .sums td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sums-wrap { padding: 0 4mm 2.5mm 3mm; }
+  .paybox {
+    background: #ececec;
+    border: 1px solid #000; border-bottom: none;
+    padding: 2.5mm 3mm 2mm 3mm;
+  }
+  .paybox table { border-collapse: collapse; width: 100%; }
+  .paybox td { padding: .7mm 0; font-size: 8.5pt; vertical-align: top; border: none; }
+  .paybox td.lbl { font-weight: bold; text-align: left; }
+  .paybox td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .paybox td.note { font-size: 7.8pt; }
+  .paybox tr.pay td { font-size: 11pt; font-weight: bold; padding-top: 2.2mm; }
+
+  .rc-note { margin: 2mm 2mm 0 2mm; font-weight: bold; color: #900; font-size: 8.5pt; }
+  .notes { margin: 0 2mm 2mm 2mm; color: #000; font-size: 8.2pt; line-height: 1.45; white-space: pre-line; }
+
+  /* ---- footer ---- */
+  table.footer { width: 100%; border-collapse: collapse; font-size: 8.2pt; }
+  table.footer td { vertical-align: top; padding: 0 4mm 0 0; width: 33%; }
+  .footer h5 { margin: 0 0 1mm 0; font-size: 8.2pt; font-weight: bold; }
+  .footer .val { line-height: 1.5; margin-bottom: 3mm; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  
+  
+
+  <table class="head">
+    <tr>
+      <td><div class="company">Saddam Hussain</div></td>
+      <td class="titlecol">
+        <h1>Faktura</h1>
+        <table class="num">
+          <tr><td class="lbl">Fakturanummer</td><td class="val">2026-0001</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="customer-box">
+    <div class="cname">Shangla Tech Solutions AB</div>
+    <div>MUSKÖTSTIGEN 5 LGH 1603 C/O KHALID KHAN</div>
+    <div>19252 SOLLENTUNA</div>
+    
+    
+    
+  </div>
+
+  <table class="meta">
+    <tr><td class="lbl">Kundnr</td><td class="val">22</td></tr>
+    <tr><td class="lbl">Fakturadatum</td><td class="val">2026-07-20</td></tr>
+    <tr><td class="lbl">Leveransdatum</td><td class="val">2026-07-20</td></tr>
+    <tr><td class="lbl">Dröjsmålsränta</td>
+        <td>Vid betalning efter förfallodagen debiteras ränta enligt räntelagen.</td></tr>
+  </table>
+
+  
+  
+    
+    
+  
+  
+  <table class="sheet">
+    <tr>
+      <th class="left" style="width:14mm;">Art.nr</th>
+      <th class="left">Beskrivning</th>
+      <th class="left" style="width:15mm;">Antal</th>
+      <th class="left" style="width:13mm;">Enhet</th>
+      <th style="width:26mm;">À-pris</th>
+      <th style="width:27mm;">Summa</th>
+    </tr>
+    
+    <tr>
+      <td class="left">11</td>
+      <td class="left">TaxiService-körning Juni-2026</td>
+      <td class="left">1,00</td>
+      <td class="left">st</td>
+      <td>46 900,00</td>
+      <td>46 900,00</td>
+    </tr>
+    
+    
+    
+    <tr class="spacer"><td colspan="6" style="height:117.2mm;"></td></tr>
+    <tr class="bottomrow">
+      <td colspan="2" style="width:40%;">
+        <div class="sums-wrap">
+        <table class="sums">
+          <tr><td class="lbl">Exkl. moms</td><td class="num">46 900,00</td></tr>
+          
+          <tr><td class="lbl">Moms (25 %)</td>
+              <td class="num">11 725,00</td></tr>
+          
+          
+          <tr><td class="lbl">Avrundning</td><td class="num">0,00</td></tr>
+        </table>
+        </div>
+      </td>
+      <td colspan="4">
+        <div class="paybox">
+        <table>
+          <tr><td class="lbl">Förfallodatum</td><td class="num">2026-07-30</td></tr>
+          
+          <tr><td class="lbl">OCR</td><td class="num">372</td></tr>
+          <tr><td class="note">Anges vid betalning.</td><td></td></tr>
+          
+          
+          
+          <tr><td class="lbl">Bank</td><td class="num">EXEMPELBANKEN</td></tr>
+          <tr><td class="lbl">Kontonr</td><td class="num">3456-7890</td></tr>
+          
+          
+          
+          
+          <tr class="pay"><td class="lbl">Att betala</td><td class="num">58 625,00</td></tr>
+        </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="footer">
+    <tr>
+    <td>
+      <h5>Adress</h5>
+      <div class="val">
+        Saddam Hussain<br>
+        Friherregatan 48 lgh 1102<br>
+        165 58 Hässelby
+      </div>
+    </td>
+    <td>
+      <h5>Telefon</h5>
+      <div class="val">—</div>
+      <h5>E-post/Webbplats</h5>
+      <div class="val">—</div>
+    </td>
+    <td>
+      <h5>Organisationsnr</h5>
+      <div class="val">830116-0571</div>
+      
+      <div class="val">Godkänd för F-skatt</div>
+      
+    </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

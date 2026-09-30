@@ -1,0 +1,52 @@
+[project]
+name = "firmabok-desktop"
+version = "1.1.1"
+description = "Local-first bookkeeping, VAT (moms) and invoicing desktop app for Swedish sole proprietorships (enskild firma). PySide6/Qt6. MIT."
+readme = "README.md"
+requires-python = ">=3.11"  # Nix flake ships 3.12; 3.11 works too
+license = { text = "MIT" }
+authors = [{ name = "Firmabok" }]
+dependencies = [
+    "PySide6>=6.6",
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13",
+    "jinja2>=3.1",
+    "weasyprint>=61.2",
+    "argon2-cffi>=23.1",
+    "cryptography>=42.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2", "pytest-qt>=4.4", "ruff>=0.5"]
+
+[project.scripts]
+firmabok-desktop = "firmabok.ui.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"firmabok.core" = ["templates/*.html"]
+"firmabok.i18n" = ["locales/*.json"]
+"firmabok.ui.resources" = ["icons/*.svg", "*.svg"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501", "E702", "B008", "SIM108"]  # E702: compact `stmt; stmt` style used deliberately
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]

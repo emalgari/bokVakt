@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Momsrapport {{ period.label }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; @bottom-center {
+      content: "Momsrapport {{ period.label }} — skapad lokalt av Firmabok (underlag, ej inlämnad deklaration)";
+      font-family: "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #667; } }
+  body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-size: 9.5pt; color: #1a1d21; }
+  h1 { font-size: 15pt; color: #10314f; margin-bottom: 2mm; }
+  h2 { font-size: 11pt; color: #10314f; margin-top: 7mm; }
+  .meta { color: #445; margin-bottom: 6mm; line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #10314f; color: #fff; text-align: left; padding: 1.6mm 2mm; font-size: 8.5pt; }
+  td { padding: 1.4mm 2mm; border-bottom: 1px solid #e3e7ec; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .box49 td { font-weight: bold; background: #eef4fa; border-top: 2px solid #10314f; }
+  .zero td { color: #99a; }
+  .note { font-size: 8pt; color: #556; margin-top: 5mm; line-height: 1.5; }
+  .locked { color: #1d5c2b; font-weight: bold; }
+</style>
+</head>
+<body>
+  <h1>{{ _("Momsredovisning") }} {{ kind_label }} — {{ period.label }}</h1>
+  <div class="meta">
+    {{ profile.company_name or "Företagsnamn saknas" }}{% if profile.org_nr %} · Org.nr {{ profile.org_nr }}{% endif %}{% if profile.vat_number %} · Momsreg.nr {{ profile.vat_number }}{% endif %}<br>
+    {{ _("Period:") }} {{ period.start }} – {{ period.end }}<br>
+    {{ _("Status:") }} {% if report.locked %}<span class="locked">{{ _("Deklarerad & låst") }} ({{ report.filed_at.strftime('%Y-%m-%d') if report.filed_at else '' }})</span>{% else %}{{ _("Utkast (ej låst)") }}{% endif %}
+  </div>
+
+  <h2>{{ _("Nyckeltal") }}</h2>
+  <table>
+    <tr><td>{{ _("Utgående moms (exakt)") }}</td><td class="num">{{ decl.output_vat | money }}</td></tr>
+    <tr><td>{{ _("Ingående moms att dra av (exakt)") }}</td><td class="num">{{ decl.input_vat | money }}</td></tr>
+    <tr><td>{{ _("Moms att betala") if decl.net_vat_kronor >= 0 else _("Moms att få tillbaka") }} ({{ _("fält") }} 49, {{ _("hela kronor") }})</td><td class="num"><b>{{ decl.net_vat_kronor }} kr</b></td></tr>
+    <tr><td>{{ _("Försäljning exkl. moms i perioden") }}</td><td class="num">{{ decl.sales_base_total | money }}</td></tr>
+  </table>
+
+  <h2>{{ _("Momsdeklarationens fält (SKV 4700)") }}</h2>
+  <table>
+    <thead><tr><th>{{ _("Fält") }}</th><th>{{ _("Beskrivning") }}</th><th class="num">{{ _("Hela kronor") }}</th><th class="num">{{ _("Exakt belopp") }}</th></tr></thead>
+    <tbody>
+      {% for r in boxes_rows %}
+      <tr class="{{ 'box49' if r.box == '49' else ('zero' if r.kronor == 0 and r.exact == 0 else '') }}">
+        <td>{{ r.box }}</td><td>{{ _(r.label) }}</td>
+        <td class="num">{{ r.kronor }}</td><td class="num">{{ r.exact | sek }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>{{ _("Utgående moms per sats") }}</h2>
+  <table>
+    <thead><tr><th>{{ _("Sats") }}</th><th class="num">{{ _("Underlag") }}</th><th class="num">{{ _("Moms") }}</th></tr></thead>
+    <tbody>
+      {% for b in decl.sales_by_rate %}
+      <tr><td>{{ b.rate }} %</td><td class="num">{{ b.base | money }}</td><td class="num">{{ b.vat | money }}</td></tr>
+      {% else %}<tr><td colspan="3">{{ _("Ingen momspliktig försäljning.") }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <div class="note">
+    Beräkning: fält 49 = (10+11+12+30+31+32+60+61+62) − 48, på avrundade krontal per fält
+    (ML 1994:200 1 kap. 7 §: belopp anges i hela krontal). Moms beräknas på momspliktig
+    försäljning och avdragsgilla inköp — aldrig på vinst. Detta dokument är underlag för
+    din egen deklaration i Skatteverkets e-tjänst; Firmabok lämnar inte in något.
+    {% if decl.warnings %}<br><br><b>Varningar:</b><br>{% for w in decl.warnings %}• {{ w }}<br>{% endfor %}{% endif %}
+  </div>
+</body>
+</html>

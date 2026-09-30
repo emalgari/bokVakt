@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% set active = 'income' %}
+{% block title %}{{ _("Intäkter") }} — Firmabok{% endblock %}
+{% block content %}
+<div class="btn-row" style="justify-content:space-between;">
+  <h2 style="margin:0">{{ _("Intäkter") }} {{ fy }}</h2>
+  <a href="/intakter/ny" role="button">+ {{ _("Ny intäkt") }}</a>
+</div>
+
+<form method="get" class="filters">
+  <label>{{ _("År") }}
+    <select name="year">
+      {% for y in [fy-1, fy, fy+1] %}<option value="{{ y }}" {{ 'selected' if y == fy }}>{{ y }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Månad") }}
+    <select name="month">
+      <option value="">{{ _("Hela året") }}</option>
+      {% for m in range(1,13) %}<option value="{{ m }}" {{ 'selected' if month == m|string }}>{{ month_name(m) }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Status") }}
+    <select name="status">
+      <option value="">{{ _("Alla") }}</option>
+      <option value="unpaid" {{ 'selected' if status == 'unpaid' }}>{{ _("Obetalda") }}</option>
+      <option value="paid" {{ 'selected' if status == 'paid' }}>{{ _("Betalda") }}</option>
+      <option value="partial" {{ 'selected' if status == 'partial' }}>{{ _("Delbetalda") }}</option>
+    </select>
+  </label>
+  <label>{{ _("Sök") }}
+    <input type="search" name="q" value="{{ q }}" placeholder="kund, beskrivning, ref">
+  </label>
+  <button type="submit" class="secondary">{{ _("Filtrera") }}</button>
+</form>
+
+<div class="scroll-x sticky-head card" style="padding:0;">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>{{ _("Datum") }}</th><th>v.</th><th>{{ _("Kund") }}</th><th>{{ _("Beskrivning") }}</th><th>{{ _("Momskod") }}</th>
+        <th class="num">{{ _("Exkl. moms") }}</th><th class="num">{{ _("Moms") }}</th><th class="num">{{ _("Inkl. moms") }}</th>
+        <th>{{ _("Status") }}</th><th>{{ _("Faktura") }}</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.entry_date | dsv }}</td>
+        <td class="muted">{{ e.week }}</td>
+        <td>{{ e.customer_name }}</td>
+        <td>{{ e.description[:60] }}</td>
+        <td><span class="muted">{{ e.vat_code }}</span> {{ e.vat_rate }}%</td>
+        <td class="num">{{ e.net_amount | sek }}</td>
+        <td class="num">{{ e.vat_amount | sek }}</td>
+        <td class="num">{{ e.gross_amount | sek }}</td>
+        <td>
+          <span class="badge badge-{{ e.payment_status }}">
+            {{ _({'unpaid':'Obetald','paid':'Betald','partial':'Delbetald'}[e.payment_status]) }}
+          </span>
+        </td>
+        <td>
+          {% if e.invoice_id %}<a href="/fakturor/{{ e.invoice_id }}">{{ e.invoice_ref or "faktura" }}</a>
+          {% elif e.invoice_ref %}{{ e.invoice_ref }}{% else %}—{% endif %}
+        </td>
+        <td>
+          <div class="btn-row" style="gap:.25rem;">
+            {% if e.payment_status != 'paid' %}
+            <form method="post" action="/intakter/{{ e.id }}/betald" class="inline">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="secondary outline small-btn" title="{{ _("Markera som betald") }}">✓ {{ _("Betald") }}</button>
+            </form>
+            {% endif %}
+            {% if not e.invoice_id %}
+            <form method="post" action="/intakter/{{ e.id }}/skapa-faktura" class="inline">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="secondary outline small-btn" title="{{ _("Skapa fakturautkast från intäkten") }}">📄 {{ _("Faktura") }}</button>
+            </form>
+            {% endif %}
+            <a href="/intakter/{{ e.id }}/redigera" role="button" class="secondary outline small-btn">✎</a>
+            <form method="post" action="/intakter/{{ e.id }}/radera" class="inline"
+                  onsubmit="return confirm('{{ _('Radera intäkten?') }}');">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="contrast outline small-btn" title="Radera">🗑</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="11" class="muted" style="text-align:center; padding:1.5rem;">
+        Inga intäkter för filtret. <a href="/intakter/ny">{{ _("Registrera den första →") }}</a>
+      </td></tr>
+      {% endfor %}
+      {% if entries %}
+      <tr class="total-row">
+        <td colspan="5">{{ _("Summa") }} ({{ totals.count }} {{ _("rader") }})</td>
+        <td class="num">{{ totals.net | sek }}</td>
+        <td class="num">{{ totals.vat | sek }}</td>
+        <td class="num">{{ totals.gross | sek }}</td>
+        <td colspan="3"></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+<p class="muted" style="margin-top:.6rem; font-size:.85rem;">
+  {{ _("Tips: vecko-/månadsintäkter registreras per datum — dashboarden grupperar dem per vecka och månad.") }}
+  {{ _("Utgående moms räknas per intäkt på beloppet exkl. moms (aldrig på vinsten).") }}
+</p>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% set active = 'customers' %}
+{% block title %}{{ _("Kunder") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Kunder") }}</h2>
+
+<div class="grid2">
+<div class="scroll-x card" style="padding:0;">
+  <table class="data">
+    <thead><tr><th>{{ _("Namn") }}</th><th>{{ _("Org.nr") }}/personnr</th><th>{{ _("Ort") }}</th><th>{{ _("Land") }}</th><th>{{ _("Referens") }}</th><th></th></tr></thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td><b>{{ c.name }}</b><br><small class="muted">{{ c.email }} {{ c.phone }}</small></td>
+        <td>{{ c.org_nr or "—" }}{% if c.vat_number %}<br><small class="muted">{{ c.vat_number }}</small>{% endif %}</td>
+        <td>{{ c.city }}</td>
+        <td>{{ c.country }}</td>
+        <td>{{ c.reference }}</td>
+        <td>
+          <div class="btn-row" style="gap:.25rem;">
+            <button class="secondary outline small-btn" onclick="editCustomer({{ c.id }})">✎</button>
+            <form method="post" action="/kunder/{{ c.id }}/radera" class="inline"
+                  onsubmit="return confirm('{{ _('Radera kunden?') }}');">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="contrast outline small-btn">🗑</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      <tr id="edit-row-{{ c.id }}" style="display:none;">
+        <td colspan="6">
+          <form method="post" action="/kunder/{{ c.id }}/redigera">
+            <input type="hidden" name="csrf" value="{{ csrf_token }}">
+            <div class="grid3">
+              <input name="name" value="{{ c.name }}" placeholder="{{ _('Namn') }} *" required>
+              <input name="customer_no" value="{{ c.customer_no }}" placeholder="{{ _('Kundnr') }}">
+              <label style="font-size:.85rem; margin:0;"><input type="checkbox" name="is_business" value="on" {{ 'checked' if c.is_business }}> {{ _("Företag") }}</label>
+              <input name="org_nr" value="{{ c.org_nr }}" placeholder="{{ _('Org.nr / personnr') }}">
+              <input name="vat_number" value="{{ c.vat_number }}" placeholder="{{ _('EU VAT-nr (t.ex. DK12345678)') }}">
+              <input name="reference" value="{{ c.reference }}" placeholder="{{ _('Referensperson') }}">
+              <input name="address_line1" value="{{ c.address_line1 }}" placeholder="{{ _('Adress') }}">
+              <input name="address_line2" value="{{ c.address_line2 }}" placeholder="{{ _('Adress 2') }}">
+              <input name="postal_code" value="{{ c.postal_code }}" placeholder="{{ _('Postnummer') }}">
+              <input name="city" value="{{ c.city }}" placeholder="{{ _('Ort') }}">
+              <input name="country" value="{{ c.country }}" placeholder="{{ _('Land') }}">
+              <input name="email" value="{{ c.email }}" placeholder="{{ _('E-post') }}">
+              <input name="phone" value="{{ c.phone }}" placeholder="{{ _('Telefon') }}">
+            </div>
+            <textarea name="notes" rows="2" placeholder="{{ _('Anteckningar') }}">{{ c.notes }}</textarea>
+            <div class="btn-row">
+              <button type="submit">{{ _("Spara") }}</button>
+              <button type="button" class="secondary outline" onclick="editCustomer({{ c.id }})">Avbryt</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:1.5rem;">{{ _("Inga kunder ännu.") }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h4>{{ _("Ny kund") }}</h4>
+  <form method="post" action="/kunder/ny">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="grid2">
+      <div><label>{{ _("Namn") }} *</label><input name="name" required placeholder="{{ _('Företag eller person') }}"></div>
+      <div><label>{{ _("Kundnr") }}</label><input name="customer_no" placeholder="{{ _('valfritt') }}"></div>
+      <div><label style="font-size:.9rem;"><input type="checkbox" name="is_business" value="on" checked> Företag (annan person)</label></div>
+      <div><label>{{ _("Org.nr / personnr") }}</label><input name="org_nr" placeholder="XXXXXX-XXXX"></div>
+      <div><label>{{ _("EU VAT-nummer") }}</label><input name="vat_number" placeholder="{{ _('t.ex. DK12345678') }}"></div>
+      <div><label>{{ _("Referensperson") }}</label><input name="reference"></div>
+      <div><label>{{ _("Adress") }}</label><input name="address_line1"></div>
+      <div><label>{{ _("Adress 2") }}</label><input name="address_line2"></div>
+      <div><label>{{ _("Postnummer") }}</label><input name="postal_code"></div>
+      <div><label>{{ _("Ort") }}</label><input name="city"></div>
+      <div><label>{{ _("Land") }}</label><input name="country" value="Sverige"></div>
+      <div><label>{{ _("E-post") }}</label><input name="email" type="email"></div>
+      <div><label>{{ _("Telefon") }}</label><input name="phone"></div>
+    </div>
+    <label>{{ _("Anteckningar") }}</label>
+    <textarea name="notes" rows="2"></textarea>
+    <button type="submit" style="margin-top:.5rem;">{{ _("Spara kund") }}</button>
+  </form>
+</div>
+</div>
+<script>
+function editCustomer(id){
+  const row = document.getElementById('edit-row-' + id);
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+</script>
+{% endblock %}

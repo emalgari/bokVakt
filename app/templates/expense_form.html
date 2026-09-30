@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% set active = 'expenses' %}
+{% block title %}{{ _('Ny utgift') if is_new else _('Redigera utgift') }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _('Registrera utgift') if is_new else _('Redigera utgift') ~ ' #' ~ expense.id }}</h2>
+
+<div class="card" style="max-width:860px;">
+<form method="post" enctype="multipart/form-data"
+      action="{{ '/utgifter/ny' if is_new else '/utgifter/' ~ expense.id ~ '/redigera' }}">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="grid3">
+    <div>
+      <label for="expense_date">{{ _("Datum") }} *</label>
+      <input type="date" id="expense_date" name="expense_date" required value="{{ expense.expense_date | dsv }}">
+    </div>
+    <div>
+      <label for="supplier">{{ _("Leverantör") }} *</label>
+      <input id="supplier" name="supplier" required value="{{ expense.supplier }}" placeholder="T.ex. Telia, Adlibris…">
+    </div>
+    <div>
+      <label for="payment_method">{{ _("Betalningssätt") }}</label>
+      <input id="payment_method" name="payment_method" value="{{ expense.payment_method }}" placeholder="kort, swish, bank…">
+    </div>
+    <div>
+      <label for="payment_date">{{ _("Betalningsdatum") }}</label>
+      <input type="date" id="payment_date" name="payment_date" value="{{ expense.payment_date | dsv }}">
+      <small class="muted">{{ _("Behövs om du väljer ingående moms per betalningsdatum i Inställningar.") }}</small>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <label for="category_id">{{ _("Kategori") }}</label>
+      <select id="category_id" name="category_id">
+        <option value="">{{ _("— Välj —") }}</option>
+        {% for c in categories %}
+        <option value="{{ c.id }}" {{ 'selected' if expense.category_id == c.id }}>{{ c.name }}{% if c.bas_account_hint %} ({{ c.bas_account_hint }}){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="category_name_new">{{ _("…eller skapa ny kategori") }}</label>
+      <input id="category_name_new" name="category_name_new" placeholder="Nytt kategorinamn">
+    </div>
+  </div>
+
+  <label for="description">{{ _("Beskrivning") }}</label>
+  <input id="description" name="description" value="{{ expense.description }}" placeholder="{{ _('Vad avser köpet?') }}">
+
+  <div class="grid3">
+    <div>
+      <label for="vat_code">{{ _("Momskod") }} *</label>
+      <select id="vat_code" name="vat_code" onchange="syncRate(this)">
+        {% for c in purchase_codes %}
+        <option value="{{ c.code }}" data-rate="{{ c.percent }}"
+                {{ 'selected' if expense.vat_code == c.code }}>{{ _(c.label_sv) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="vat_rate">{{ _("Momssats %") }}</label>
+      <input id="vat_rate" name="vat_rate" inputmode="decimal" value="{{ expense.vat_rate }}">
+    </div>
+    <div>
+      <label>{{ _("Ange belopp som") }}</label>
+      <select name="amount_mode">
+        <option value="gross" {{ 'selected' if mode == 'gross' }}>{{ _("Inkl. moms (kvittots totalsumma)") }}</option>
+        <option value="net" {{ 'selected' if mode == 'net' }}>{{ _("Exkl. moms") }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div>
+      <label for="amount">{{ _("Belopp (kr)") }} *</label>
+      <input id="amount" name="amount" inputmode="decimal" required
+             value="{{ expense.gross_amount if not is_new else '' }}" placeholder="0,00">
+    </div>
+    <div>
+      <label for="deductible_vat">{{ _("Avdragsgill moms (kr)") }}</label>
+      <input id="deductible_vat" name="deductible_vat" inputmode="decimal"
+             value="{{ expense.deductible_vat if not is_new else '' }}"
+             placeholder="tom = hela momsen">
+      <small class="muted">{{ _("Minska vid t.ex. representation eller blandad användning.") }}</small>
+    </div>
+    <div>
+      <label for="receipt">{{ _("Kvitto (bild/PDF, max 10 MB)") }}</label>
+      <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf">
+      {% if expense.receipt_path %}
+      <small>Nuvarande: <a href="/utgifter/{{ expense.id }}/kvitto" target="_blank">{{ expense.receipt_original_name or 'kvitto' }}</a></small>
+      {% endif %}
+    </div>
+  </div>
+
+  <label for="notes">{{ _("Anteckningar") }}</label>
+  <textarea id="notes" name="notes" rows="2">{{ expense.notes }}</textarea>
+
+  <div class="btn-row" style="margin-top:1rem;">
+    <button type="submit">{{ _('Spara utgift') if is_new else _('Spara ändringar') }}</button>
+    <a href="/utgifter" role="button" class="secondary outline">{{ _("Avbryt") }}</a>
+  </div>
+</form>
+</div>
+
+<script>
+function syncRate(sel){
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('vat_rate').value = opt.getAttribute('data-rate');
+}
+document.addEventListener('DOMContentLoaded', function(){ syncRate(document.getElementById('vat_code')); });
+</script>
+{% endblock %}

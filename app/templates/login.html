@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Logga in") }} — Firmabok{% endblock %}
+{% block content %}
+<div style="max-width:420px; margin:4rem auto;">
+  <div class="card">
+    <h3>{{ _("Logga in") }}</h3>
+    {% if error %}<div class="flash flash-error">{{ error }}</div>{% endif %}
+    <p class="muted">{{ _("Lokal inloggning — ingen data lämnar din dator.") }}</p>
+    <form method="post" action="/login">
+      <label for="username">{{ _("Användarnamn") }}</label>
+      <input id="username" name="username" required autocomplete="username">
+      <label for="password">{{ _("Lösenord") }}</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password">
+      <input type="hidden" name="next" value="{{ next or '' }}">
+      <button type="submit" class="contrast" style="width:100%">{{ _("Logga in") }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

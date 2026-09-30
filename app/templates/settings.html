@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% set active = 'settings' %}
+{% block title %}{{ _("Inställningar") }} — Firmabok{% endblock %}
+{% block content %}
+<h2>{{ _("Inställningar") }}</h2>
+
+<div class="card" style="margin-bottom:1.2rem;">
+  <h4>1. {{ _("Företagsprofil & bankuppgifter") }}</h4>
+  <p class="muted" style="font-size:.9rem;">
+    Dessa uppgifter visas på dina fakturor. Fyll i allt du har — saknade fält markeras som
+    varningar på dashboarden. Du kan också klistra in uppgifterna senare när dina dokument finns.
+  </p>
+  <form method="post" action="/installningar/foretag" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="grid3">
+      <div>{{ _("Företagsnamn") }} *<input name="company_name" value="{{ profile.company_name }}" placeholder="T.ex. Anna Andersson Konsult"></div>
+      <div>{{ _("Organisationsnummer (XXXXXX-XXXX)") }} *<input name="org_nr" value="{{ profile.org_nr }}" placeholder="123456-7890"></div>
+      <div>{{ _("Momsreg.nr (SE + orgnr + 01)") }} *<input name="vat_number" value="{{ profile.vat_number }}" placeholder="SE123456789001"></div>
+      <div>
+        <label style="font-size:.9rem;">
+          <input type="checkbox" name="f_skatt_registered" value="on" {{ 'checked' if profile.f_skatt_registered }}>
+          {{ _("Registrerad för F-skatt") }}
+        </label>
+      </div>
+      <div>{{ _("F-skatt text på fakturan") }}<input name="f_skatt_text" value="{{ profile.f_skatt_text }}"></div>
+      <div>{{ _("Logotyp (jpg/png/svg/pdf)") }}<input type="file" name="logo" accept="image/*,application/pdf"></div>
+    </div>
+    {% if profile.logo_path %}
+    <div class="btn-row" style="margin:.4rem 0;">
+      <img src="/uploads/{{ profile.logo_path }}" alt="Logotyp" style="max-height:48px; border:1px solid #ddd; padding:4px; background:#fff;">
+      <form method="post" action="/installningar/logotyp/radera" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <button type="submit" class="contrast outline small-btn">Ta bort logotyp</button>
+      </form>
+    </div>
+    {% endif %}
+    <div class="grid3">
+      <div>{{ _("Adress") }}<input name="address_line1" value="{{ profile.address_line1 }}"></div>
+      <div>{{ _("Adress 2") }}<input name="address_line2" value="{{ profile.address_line2 }}"></div>
+      <div>{{ _("Postnummer") }}<input name="postal_code" value="{{ profile.postal_code }}"></div>
+      <div>{{ _("Ort") }}<input name="city" value="{{ profile.city }}"></div>
+      <div>{{ _("Land") }}<input name="country" value="{{ profile.country }}"></div>
+      <div>{{ _("Telefon") }}<input name="phone" value="{{ profile.phone }}"></div>
+      <div>{{ _("E-post") }}<input name="email" type="email" value="{{ profile.email }}"></div>
+      <div>{{ _("Webbplats") }}<input name="website" value="{{ profile.website }}"></div>
+      <div>{{ _("Verksamhet (beskrivning)") }}<input name="business_description" value="{{ profile.business_description }}" placeholder="T.ex. Taxitrafik"></div>
+      <div>{{ _("SNI-koder") }}<input name="sni_codes" value="{{ profile.sni_codes }}" placeholder="t.ex. 49.320"></div>
+    </div>
+    <div class="grid3">
+      <div>{{ _("Bank") }}<input name="bank_name" value="{{ profile.bank_name }}"></div>
+      <div>{{ _("Bankgiro") }}<input name="bankgiro" value="{{ profile.bankgiro }}" placeholder="123,456-7"></div>
+      <div>{{ _("Plusgiro") }}<input name="plusgiro" value="{{ profile.plusgiro }}"></div>
+      <div>{{ _("IBAN") }}<input name="iban" value="{{ profile.iban }}" placeholder="SE00 0000 0000 0000 0000 0000"></div>
+      <div>{{ _("BIC") }}<input name="bic" value="{{ profile.bic }}"></div>
+      <div>{{ _("Kontonummer (bankkonto)") }}<input name="bank_account_number" value="{{ profile.bank_account_number }}" placeholder="t.ex. 3456-7890"></div>
+    </div>
+    <button type="submit" style="margin-top:.6rem;">{{ _("Spara företagsprofil") }}</button>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:1.2rem;">
+  <h4>2. {{ _("Fakturainställningar") }}</h4>
+  <form method="post" action="/installningar/faktura">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="grid3">
+      <div>{{ _("Betalningsvillkor (dagar)") }}<input type="number" min="0" name="payment_terms_days" value="{{ profile.payment_terms_days }}"></div>
+      <div>{{ _("Dröjsmålsränta (%/år)") }}<input name="late_interest_rate" inputmode="decimal" value="{{ profile.late_interest_rate }}"></div>
+      <div>{{ _("Avrunda totalsumma till hela kronor (Avrundning-rad)") }}
+        <select name="round_total_to_krona">
+          <option value="" {{ 'selected' if not profile.round_total_to_krona }}>{{ _("Nej (Avrundning 0,00)") }}</option>
+          <option value="on" {{ 'selected' if profile.round_total_to_krona }}>{{ _("Ja") }}</option>
+        </select>
+      </div>
+      <div>{{ _("Betalningsmottagare på fakturan") }}
+        <select name="payment_display">
+          <option value="bankgiro" {{ 'selected' if profile.payment_display == 'bankgiro' }}>Bankgiro</option>
+          <option value="plusgiro" {{ 'selected' if profile.payment_display == 'plusgiro' }}>Plusgiro</option>
+          <option value="bankaccount" {{ 'selected' if profile.payment_display == 'bankaccount' }}>{{ _("Bankkonto (banknamn + kontonummer)") }}</option>
+        </select>
+      </div>
+      <div>{{ _("Visa OCR på fakturan") }}
+        <select name="invoice_show_ocr">
+          <option value="on" {{ 'selected' if profile.invoice_show_ocr }}>{{ _("Ja") }}</option>
+          <option value="" {{ 'selected' if not profile.invoice_show_ocr }}>{{ _("Nej") }}</option>
+        </select>
+      </div>
+      <div>{{ _("Nummerprefix") }}<input name="invoice_number_prefix" value="{{ profile.invoice_number_prefix }}" placeholder="t.ex. A (ger A2026-0001)"></div>
+      <div>{{ _("Sifferlängd i nummer") }}<input type="number" min="2" max="8" name="invoice_number_digits" value="{{ profile.invoice_number_digits }}"></div>
+      <div>{{ _("Startnummer (nya serier)") }}<input type="number" min="1" name="invoice_number_start" value="{{ profile.invoice_number_start }}"></div>
+    </div>
+    {{ _("Dröjsmålsräntetext på fakturan") }}
+    <input name="late_interest_text" value="{{ profile.late_interest_text }}">
+    {{ _("Standardnotering på fakturor") }}
+    <textarea name="invoice_notes" rows="2" placeholder="{{ _('T.ex. tack för uppdraget!') }}">{{ profile.invoice_notes }}</textarea>
+    <button type="submit" style="margin-top:.5rem;">{{ _("Spara fakturainställningar") }}</button>
+    <p class="muted" style="font-size:.85rem;">
+      Format: <b>{{ profile.invoice_number_prefix }}ÅÅÅÅ-{{ "%0*d"|format(profile.invoice_number_digits, profile.invoice_number_start) }}</b>
+      per räkenskapsår. Påbörjade serier fortsätter från högsta använda nummer (inga luckor).
+    </p>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:1.2rem;">
+  <h4>3. {{ _("Bokföringsinställningar") }}</h4>
+  <form method="post" action="/installningar/bokforing">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="grid3">
+      <div>
+        {{ _("Räkenskapsår") }}
+        <select name="fiscal_year_start_month">
+          <option value="1" {{ 'selected' if profile.fiscal_year_start_month == 1 }}<label>>{{ _("Kalenderår (jan–dec)") }}</option></label>
+          {% for m in range(2,13) %}
+          <option value="{{ m }}" {{ 'selected' if profile.fiscal_year_start_month == m }}>{{ _('Brutet år, start') }} {{ month_name(m) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Momsperiod (deklaration)</label>
+        <select name="vat_period">
+          <option value="month" {{ 'selected' if profile.vat_period == 'month' }}<label>>{{ _("Månadsvis") }}</option></label>
+          <option value="quarter" {{ 'selected' if profile.vat_period == 'quarter' }}<label>>{{ _("Kvartalsvis") }}</option></label>
+          <option value="year" {{ 'selected' if profile.vat_period == 'year' }}<label>>{{ _("Årsvis") }}</option></label>
+        </select>
+      </div>
+      <div>
+        {{ _("Redovisningsmetod moms") }}
+        <select name="vat_method">
+          <option value="bokslut" {{ 'selected' if profile.vat_method == 'bokslut' }}>Bokslutsmetoden (kontantmetoden) — din registrering hos SKV</option>
+          <option value="faktura" {{ 'selected' if profile.vat_method == 'faktura' }}>Fakturametoden (per faktureringsdatum)</option>
+        </select>
+        <small class="muted">Bokslutsmetoden: utgående moms redovisas när kunden betalat;
+        obetalda poster senast i årets sista period. Ange betalningsdatum på intäkter!</small>
+      </div>
+      <div>
+        {{ _("Ingående moms per betalningsdatum") }}
+        <select name="input_vat_on_payment">
+          <option value="" {{ 'selected' if not profile.input_vat_on_payment }}>Nej — avdrag när utgiften bokförs (förenklingsregeln, omsättning &lt; 1 Mkr)</option>
+          <option value="on" {{ 'selected' if profile.input_vat_on_payment }}>Ja — avdrag när utgiften är betald</option>
+        </select>
+      </div>
+      <div>
+        {{ _("Standardmomssats") }}
+        <select name="default_vat_rate">
+          <option value="25" {{ 'selected' if profile.default_vat_rate == 25 }}>25 %</option>
+          <option value="12" {{ 'selected' if profile.default_vat_rate == 12 }}>12 %</option>
+          <option value="6" {{ 'selected' if profile.default_vat_rate == 6 }}>6 %</option>
+        </select>
+      </div>
+    </div>
+    <button type="submit" style="margin-top:.5rem;">{{ _("Spara bokföringsinställningar") }}</button>
+  </form>
+
+  <hr>
+  <h4 style="color:#900;">⚠ {{ _("Förenklat läge (EJ SKATTEVERKSKOMPATIBELT)") }}</h4>
+  <p style="font-size:.9rem;">
+    Förenklat läge visar en "moms" på 25 % av <b>vinsten</b> på dashboarden. Detta är
+    <b>fel</b> enligt svensk momslagstiftning (moms tas på momspliktig försäljning, inte på vinst)
+    och får <b>inte</b> användas för momsdeklaration eller någon annan rapportering till
+    Skatteverket. Standardläget (korrekt moms) rekommenderas alltid.
+  </p>
+  <form method="post" action="/installningar/bokforing">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="fiscal_year_start_month" value="{{ profile.fiscal_year_start_month }}">
+    <input type="hidden" name="vat_period" value="{{ profile.vat_period }}">
+    <input type="hidden" name="default_vat_rate" value="{{ profile.default_vat_rate }}">
+    <div class="grid2">
+      <label style="font-size:.9rem;">
+        <input type="checkbox" name="simplified_vat_mode" value="on" {{ 'checked' if profile.simplified_vat_mode }}>
+        Aktivera förenklat läge (förstås ej korrekt)
+      </label>
+      <div>
+        <label>{{ _("Bekräfta med texten") }} <code>JAG FÖRSTÅR</code></label>
+        <input name="simplified_confirm" placeholder="JAG FÖRSTÅR">
+      </div>
+    </div>
+    <button type="submit" class="contrast" style="margin-top:.5rem;">{{ _("Spara") }}</button>
+  </form>
+</div>
+
+<div class="card">
+  <h4>4. {{ _("Konto & lösenord") }}</h4>
+  <p class="muted" style="font-size:.9rem;">Inloggad som <b>{{ user.username }}</b>. Lokalt konto — lösenordet hashas med scrypt och lämnar aldrig datorn.</p>
+  <form method="post" action="/installningar/losenord" style="max-width:480px;">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <label>{{ _("Nuvarande lösenord") }}</label>
+    <input type="password" name="current_password" autocomplete="current-password" required>
+    <div class="grid2">
+      <div><label>{{ _("Nytt lösenord (minst 8 tecken)") }}</label><input type="password" name="new_password" minlength="8" autocomplete="new-password" required></div>
+      <div><label>{{ _("Upprepa nytt") }}</label><input type="password" name="new_password2" minlength="8" autocomplete="new-password" required></div>
+    </div>
+    <button type="submit" style="margin-top:.5rem;">{{ _("Byt lösenord") }}</button>
+  </form>
+</div>
+{% endblock %}

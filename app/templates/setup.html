@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Första starten") }} — Firmabok{% endblock %}
+{% block content %}
+<div style="max-width:480px; margin:4rem auto;">
+  <div class="card">
+    <h3>Välkommen till Firmabok</h3>
+    {% if error %}<div class="flash flash-error">{{ error }}</div>{% endif %}
+    <p class="muted">
+      Första starten: skapa ett lokalt konto. Detta är det enda kontot i systemet
+      (enskild firma = en användare). Lösenordet lagras hashat lokalt.
+    </p>
+    <form method="post" action="/setup">
+      <label for="username">Användarnamn</label>
+      <input id="username" name="username" required minlength="3" autocomplete="username">
+      <label for="password">Lösenord (minst 8 tecken)</label>
+      <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+      <label for="password2">Upprepa lösenord</label>
+      <input id="password2" name="password2" type="password" required minlength="8" autocomplete="new-password">
+      <button type="submit" class="contrast" style="width:100%">Skapa konto och logga in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

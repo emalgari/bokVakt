@@ -1,0 +1,285 @@
+<!doctype html>
+{#
+  Faktura-PDF — exakt replik av användarens mall (sample_Faktura.pdf /
+  skärmdump 2026-09-27). UTAN QR-kod (användarens beslut).
+
+  Layout:
+    Sida X av Y (topp höger, @page)
+    Rad 1: Företagsnamn (vänster) | "Faktura" + Fakturanummer (höger kolumn)
+    Rad 2: Kundruta med ram (höger)
+    Rad 3: Kundnr / Fakturadatum / Leveransdatum / Dröjsmålsränta (vänster)
+    Stor ramad ruta (min-höjd ~165mm):
+        radtabell Art.nr|Beskrivning|Antal|Enhet|À-pris|Summa
+        längst ned: Exkl. moms / Moms (x %) / Avrundning (vänster)
+                    grå betalningsruta: Förfallodatum / OCR /
+                    "Anges vid betalning." / Bankgiro / Att betala (höger)
+    Footer 3 kolumner: Adress | Telefon + E-post/Webbplats |
+                       Organisationsnr + Godkänd för F-skatt
+#}
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>{{ "Kreditfaktura" if is_credit_note else "Faktura" }} {{ invoice.number or "UTKAST" }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 15mm 14mm 15mm;
+    @top-right {
+      content: "Sida " counter(page) " av " counter(pages);
+      font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+      font-size: 8pt; color: #000;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Liberation Sans", "DejaVu Sans", "Noto Sans", sans-serif;
+    font-size: 9pt; color: #000; margin: 0;
+  }
+  /* Innehållet hålls alltid innanför marginalen: 180 mm = 210 mm − 2×15 mm.
+     I PDF fyller .page exakt sidans innehållsyta; på skärm visas ett
+     A4-ark med samma marginaler (WYSIWYG). */
+  .page { max-width: 180mm; margin: 0 auto; }
+  @media screen {
+    body { background: #d9d9d9; padding: 10mm 0; }
+    .page {
+      width: 210mm; max-width: 210mm; margin: 0 auto;
+      padding: 15mm 15mm 14mm 15mm; background: #fff;
+      box-shadow: 0 1mm 5mm rgba(0, 0, 0, .35);
+    }
+  }
+  /* OBS: WeasyPrint stöder endast mediatyper (screen/print/all) — INGA
+     mediavillkor som "and (max-width: …)". Sådana regler kastar en varning
+     per rendering och ignoreras ändå, därför finns de inte i denna mall.
+     (PDF-utdata använder endast print/all; @media screen ovan är WYSIWYG
+     om HTML:en öppnas direkt i en webbläsare.) */
+  td, th { overflow-wrap: break-word; }
+  .draft-banner, .warn {
+    background: #fdd; border: 1px solid #c66; color: #900;
+    padding: 3px 6px; margin-bottom: 4px; font-weight: bold; font-size: 8.5pt;
+  }
+  .warn { background: #fff6dd; border-color: #d90; color: #7a5000; font-weight: normal; }
+
+  /* ---- header (table layout: mest robust i WeasyPrint) ---- */
+  table.head { width: 100%; border-collapse: collapse; margin-bottom: 8mm; }
+  table.head td { vertical-align: top; padding: 0; }
+  .head .company { font-size: 13pt; font-weight: bold; padding-top: 1mm; }
+  .head .titlecol { width: 45%; }
+  .head h1 { font-size: 13pt; font-weight: bold; margin: 0 0 1.5mm 0; }
+  .head table.num { border-collapse: collapse; width: 70%; }
+  .head table.num td { padding: 0; vertical-align: top; font-size: 8.5pt; }
+  .head table.num td.lbl { font-weight: bold; }
+  .head table.num td.val { text-align: right; width: 22mm; }
+
+  .customer-box {
+    width: 47%; margin-left: auto; margin-bottom: 2mm;
+    border: 1px solid #000; padding: 2.5mm 3mm;
+    font-size: 8.5pt; line-height: 1.5;
+  }
+  .customer-box .cname { font-weight: normal; }
+
+  table.meta { border-collapse: collapse; margin-bottom: 5mm; }
+  table.meta td { padding: .6mm 0; vertical-align: top; font-size: 8.5pt; }
+  table.meta td.lbl { font-weight: bold; width: 25mm; }
+  table.meta td.val { width: 68mm; }
+
+  /* ---- the big bordered sheet box: ONE table (WeasyPrint-säkert) ----
+     Tabellen har fast höjd; en distansrad med beräknad mm-höjd absorberar
+     allt överflöd så att summor + betalningsruta alltid hamnar längst ned
+     — utan position:absolute/flex/procenthöjder. */
+  table.sheet {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid #000;
+    height: 172mm;
+    margin-bottom: 6mm;
+  }
+  table.sheet th {
+    border-bottom: 1px solid #000;
+    text-align: right; padding: 1.6mm 2mm 1.6mm 3mm; font-size: 8.5pt; font-weight: bold;
+  }
+  table.sheet th.left, table.sheet td.left { text-align: left; }
+  table.sheet td {
+    padding: 1.6mm 2mm 1.6mm 3mm; text-align: right; font-size: 8.5pt;
+    font-variant-numeric: tabular-nums; vertical-align: top;
+  }
+  table.sheet tr.spacer td { padding: 0; border: none; }
+  table.sheet tr.bottomrow > td { vertical-align: bottom; padding: 0; border: none; }
+  .sums { width: 100%; border-collapse: collapse; padding: 0; }
+  .sums td { padding: .8mm 0; font-size: 8.5pt; border: none; }
+  .sums td.lbl { font-weight: bold; text-align: left; }
+  .sums td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sums-wrap { padding: 0 4mm 2.5mm 3mm; }
+  .paybox {
+    background: #ececec;
+    border: 1px solid #000; border-bottom: none;
+    padding: 2.5mm 3mm 2mm 3mm;
+  }
+  .paybox table { border-collapse: collapse; width: 100%; }
+  .paybox td { padding: .7mm 0; font-size: 8.5pt; vertical-align: top; border: none; }
+  .paybox td.lbl { font-weight: bold; text-align: left; }
+  .paybox td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .paybox td.note { font-size: 7.8pt; }
+  .paybox tr.pay td { font-size: 11pt; font-weight: bold; padding-top: 2.2mm; }
+
+  .rc-note { margin: 2mm 2mm 0 2mm; font-weight: bold; color: #900; font-size: 8.5pt; }
+  .notes { margin: 0 2mm 2mm 2mm; color: #000; font-size: 8.2pt; line-height: 1.45; white-space: pre-line; }
+
+  /* ---- footer ---- */
+  table.footer { width: 100%; border-collapse: collapse; font-size: 8.2pt; }
+  table.footer td { vertical-align: top; padding: 0 4mm 0 0; width: 33%; }
+  .footer h5 { margin: 0 0 1mm 0; font-size: 8.2pt; font-weight: bold; }
+  .footer .val { line-height: 1.5; margin-bottom: 3mm; }
+</style>
+</head>
+<body>
+{% set has_rc = invoice.lines | selectattr("vat_code", "in", ["SE_REVERSE_SALE", "EU_GOODS", "EU_SERVICES", "EXPORT_GOODS", "SERVICES_ABROAD"]) | list %}
+<div class="page">
+  {% if invoice.status == 'draft' %}
+  <div class="draft-banner">UTKAST — saknar fakturanummer. Fastställ i Firmabok innan utskick.</div>
+  {% endif %}
+  {% if is_credit_note and invoice.credit_note_for %}
+  <div class="draft-banner" style="background:#fde; border-color:#c69;">KREDITFAKTURA till faktura {{ invoice.credit_note_for.number }}</div>
+  {% endif %}
+
+  <table class="head">
+    <tr>
+      <td><div class="company">{{ profile.company_name or "【FÖRETAGSNAMN】" }}</div></td>
+      <td class="titlecol">
+        <h1>{{ "Kreditfaktura" if is_credit_note else "Faktura" }}</h1>
+        <table class="num">
+          <tr><td class="lbl">Fakturanummer</td><td class="val">{{ invoice.number or "—" }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="customer-box">
+    <div class="cname">{{ customer.name or "【KUNDNAMN】" }}</div>
+    <div>{{ customer.address_line1 }}{% if customer.address_line2 %} {{ customer.address_line2 }}{% endif %}</div>
+    <div>{{ customer.postal_code }} {{ customer.city }}</div>
+    {% if customer.country and customer.country != "Sverige" %}<div>{{ customer.country }}</div>{% endif %}
+    {% if customer.org_nr %}<div>Org.nr {{ customer.org_nr }}</div>{% endif %}
+    {% if customer.vat_number %}<div>Momsreg.nr {{ customer.vat_number }}</div>{% endif %}
+  </div>
+
+  <table class="meta">
+    {% if customer.customer_no %}<tr><td class="lbl">Kundnr</td><td class="val">{{ customer.customer_no }}</td></tr>{% endif %}
+    <tr><td class="lbl">Fakturadatum</td><td class="val">{{ invoice.invoice_date | dsv }}</td></tr>
+    <tr><td class="lbl">Leveransdatum</td><td class="val">{{ (invoice.delivery_date or invoice.invoice_date) | dsv }}</td></tr>
+    <tr><td class="lbl">Dröjsmålsränta</td>
+        <td>{{ profile.late_interest_text or "Vid betalning efter förfallodagen debiteras ränta enligt räntelagen." }}</td></tr>
+  </table>
+
+  {% set ns = namespace(est=8.0) %}
+  {% for l in invoice.lines %}
+    {% set wrap = ((l.description | length / 55) | round(0, 'ceil') | int) - 1 %}
+    {% set ns.est = ns.est + 6.8 + (wrap * 3.6 if wrap > 0 else 0) %}
+  {% endfor %}
+  {% set spacer = [172 - ns.est - 40, 4] | max %}
+  <table class="sheet">
+    <tr>
+      <th class="left" style="width:14mm;">Art.nr</th>
+      <th class="left">Beskrivning</th>
+      <th class="left" style="width:15mm;">Antal</th>
+      <th class="left" style="width:13mm;">Enhet</th>
+      <th style="width:26mm;">À-pris</th>
+      <th style="width:27mm;">Summa</th>
+    </tr>
+    {% for l in invoice.lines %}
+    <tr>
+      <td class="left">{{ l.article_no }}</td>
+      <td class="left">{{ l.description }}</td>
+      <td class="left">{{ l.quantity | qty2 }}</td>
+      <td class="left">{{ l.unit }}</td>
+      <td>{{ l.unit_price | sek }}</td>
+      <td>{{ l.line_net | sek }}</td>
+    </tr>
+    {% endfor %}
+    {% if has_rc %}
+    <tr><td colspan="6" class="left" style="padding-top:2mm;">
+      <span style="font-weight:bold; color:#900;">
+      {%- if has_rc | selectattr("vat_code", "equalto", "SE_REVERSE_SALE") | list %}Omvänd skattskyldighet: köparen är betalningsskyldig för momsen. {% endif -%}
+      {%- if has_rc | selectattr("vat_code", "equalto", "EU_GOODS") | list %}Momsfri unionsintern försäljning — köparen redovisar moms i sitt land. {% endif -%}
+      {%- if has_rc | selectattr("vat_code", "equalto", "EU_SERVICES") | list %}Tjänsten beskattas i köparens land (omvänd skattskyldighet). {% endif -%}
+      {%- if has_rc | selectattr("vat_code", "equalto", "EXPORT_GOODS") | list %}Exportförsäljning — momsfri.{% endif -%}
+      </span>
+    </td></tr>
+    {% endif %}
+    {% if invoice.notes or profile.invoice_notes %}
+    <tr><td colspan="6" class="left" style="white-space:pre-line; font-size:8.2pt;">{{ invoice.notes }}{% if invoice.notes and profile.invoice_notes %}
+
+{% endif %}{{ profile.invoice_notes }}</td></tr>
+    {% endif %}
+    <tr class="spacer"><td colspan="6" style="height:{{ spacer | round(1) }}mm;"></td></tr>
+    <tr class="bottomrow">
+      <td colspan="2" style="width:40%;">
+        <div class="sums-wrap">
+        <table class="sums">
+          <tr><td class="lbl">Exkl. moms</td><td class="num">{{ invoice.net_total | sek }}</td></tr>
+          {% for b in breakdown %}
+          <tr><td class="lbl">Moms ({{ b.rate | int if b.rate == b.rate.to_integral_value() else b.rate }} %)</td>
+              <td class="num">{{ b.vat | sek }}</td></tr>
+          {% endfor %}
+          {% if invoice.vat_total == 0 %}
+          <tr><td class="lbl">Moms</td><td class="num">{{ invoice.vat_total | sek }}</td></tr>
+          {% endif %}
+          <tr><td class="lbl">Avrundning</td><td class="num">{{ (invoice.rounding_amount or 0) | sek }}</td></tr>
+        </table>
+        </div>
+      </td>
+      <td colspan="4">
+        <div class="paybox">
+        <table>
+          <tr><td class="lbl">Förfallodatum</td><td class="num">{{ invoice.due_date | dsv }}</td></tr>
+          {% if invoice.ocr and profile.invoice_show_ocr %}
+          <tr><td class="lbl">OCR</td><td class="num">{{ invoice.ocr }}</td></tr>
+          <tr><td class="note">Anges vid betalning.</td><td></td></tr>
+          {% endif %}
+          {% set pay = profile.payment_display or 'bankgiro' %}
+          {% if pay == 'bankgiro' and profile.bankgiro %}
+          <tr><td class="lbl">Bankgiro</td><td class="num">{{ profile.bankgiro }}</td></tr>
+          {% elif pay == 'plusgiro' and profile.plusgiro %}
+          <tr><td class="lbl">Plusgiro</td><td class="num">{{ profile.plusgiro }}</td></tr>
+          {% elif pay == 'bankaccount' %}
+          {% if profile.bank_name %}<tr><td class="lbl">Bank</td><td class="num">{{ profile.bank_name }}</td></tr>{% endif %}
+          {% if profile.bank_account_number %}<tr><td class="lbl">Kontonr</td><td class="num">{{ profile.bank_account_number }}</td></tr>{% endif %}
+          {% if profile.iban %}<tr><td class="lbl">IBAN</td><td class="num">{{ profile.iban }}</td></tr>{% endif %}
+          {% if profile.bic %}<tr><td class="lbl">BIC</td><td class="num">{{ profile.bic }}</td></tr>{% endif %}
+          {% endif %}
+          {% if invoice.amount_paid and invoice.amount_paid != 0 %}
+          <tr><td class="lbl">Betalt</td><td class="num">−{{ invoice.amount_paid | sek }}</td></tr>
+          {% endif %}
+          <tr class="pay"><td class="lbl">Att betala</td><td class="num">{{ invoice.amount_to_pay | sek }}</td></tr>
+        </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="footer">
+    <tr>
+    <td>
+      <h5>Adress</h5>
+      <div class="val">
+        {{ profile.company_name }}<br>
+        {{ profile.address_line1 }}{% if profile.address_line2 %}<br>{{ profile.address_line2 }}{% endif %}<br>
+        {{ profile.postal_code }} {{ profile.city }}{% if profile.country and profile.country != "Sverige" %}<br>{{ profile.country }}{% endif %}
+      </div>
+    </td>
+    <td>
+      <h5>Telefon</h5>
+      <div class="val">{{ profile.phone or "—" }}</div>
+      <h5>E-post/Webbplats</h5>
+      <div class="val">{{ profile.email or "—" }}{% if profile.website %}<br>{{ profile.website }}{% endif %}</div>
+    </td>
+    <td>
+      <h5>Organisationsnr</h5>
+      <div class="val">{{ profile.org_nr or "—" }}{% if show_vat_number %}<br>Momsreg.nr {{ profile.vat_number }}{% endif %}</div>
+      {% if profile.f_skatt_registered %}
+      <div class="val">{{ profile.f_skatt_text or "Godkänd för F-skatt" }}</div>
+      {% endif %}
+    </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>
