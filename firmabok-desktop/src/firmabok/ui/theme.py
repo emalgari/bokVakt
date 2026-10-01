@@ -71,6 +71,15 @@ QToolButton#langBtn {{
 QToolButton#langBtn:checked {{ background: {c['accent']}; color: {c['primary']}; border-color: {c['accent']}; }}
 QToolButton#langBtn:hover {{ border-color: #FFFFFF; color: #FFFFFF; }}
 QToolButton#langBtn:checked:hover {{ color: {c['primary']}; }}
+/* light-background variant for the auth screens (same tokens as #langBtn) */
+QToolButton#langBtnLight {{
+  color: {c['primary']}; background: {c['surface']};
+  border: 1px solid {c['border']}; border-radius: 999px;
+  padding: 4px 12px; font-size: 12px; font-weight: 700; min-height: 20px;
+}}
+QToolButton#langBtnLight:checked {{ background: {c['accent']}; color: {c['primary']}; border-color: {c['accent']}; }}
+QToolButton#langBtnLight:hover {{ border-color: {c['primary']}; }}
+QToolButton#langBtnLight:focus-visible {{ border: 2px solid #0B62C4; }}
 QToolButton#settingsBtn {{
   background: transparent; border: 1px solid #52708C; border-radius: 6px;
   padding: 6px; min-height: 22px;

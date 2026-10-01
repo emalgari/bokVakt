@@ -56,8 +56,10 @@ _hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, type=Typ
 
 #: Unambiguous alphabet for recovery codes (no I, O, 0, 1).
 _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-_CODE_GROUPS = 4
-_CODE_GROUP_LEN = 4
+#: Public so the UI (input mask / grouped display) always matches the core
+#: format. Phase 2 upgrade (approved): 6 groups × 4 chars = 24 characters.
+CODE_GROUPS = 6
+CODE_GROUP_LEN = 4
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -106,18 +108,28 @@ def _validate_password(password: str) -> None:
 
 
 def generate_recovery_code() -> str:
-    """A fresh single-use recovery code, e.g. ``K7QM-4TXA-9PZR-2WDH``."""
-    groups = ["".join(secrets.choice(_CODE_ALPHABET) for _ in range(_CODE_GROUP_LEN))
-              for _ in range(_CODE_GROUPS)]
+    """A fresh single-use recovery code (24 chars), e.g.
+    ``K7QM-4TXA-9PZR-2WDH-J6NB-8FKS``."""
+    groups = ["".join(secrets.choice(_CODE_ALPHABET) for _ in range(CODE_GROUP_LEN))
+              for _ in range(CODE_GROUPS)]
     return "-".join(groups)
 
 
 def _normalize_recovery_code(code: str) -> str:
     """Canonical form: upper-case, dash-separated groups of 4. Accepts codes
-    typed without dashes / in lower case / with stray whitespace."""
+    typed without dashes / in lower case / with stray whitespace (and any
+    group count — older 4-group codes still normalize correctly)."""
     compact = re.sub(r"[^A-Za-z0-9]", "", code or "").upper()
-    groups = [compact[i:i + _CODE_GROUP_LEN] for i in range(0, len(compact), _CODE_GROUP_LEN)]
+    groups = [compact[i:i + CODE_GROUP_LEN] for i in range(0, len(compact), CODE_GROUP_LEN)]
     return "-".join(groups)
+
+
+def validate_email_format(email: str) -> str:
+    """Public email-format check for UI-side inline validation. Returns the
+    normalized (trimmed, lower-case) email; raises ``AuthError`` with key
+    ``auth.invalid_email`` when the format is bad. Thin wrapper around the
+    internal validator used by account creation/login — same single rule."""
+    return _validate_email(email)
 
 
 # ---------------------------------------------------------------------------

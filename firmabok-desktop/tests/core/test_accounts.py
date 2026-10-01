@@ -17,7 +17,7 @@ from firmabok.core.models import UserAccount
 EMAIL = "test@example.com"
 PASSWORD = "correct-horse-battery"
 NEW_PASSWORD = "nytt-lösenord-9x"
-CODE_RE = re.compile(r"^[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$")
+CODE_RE = re.compile(r"^[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){5}$")
 
 
 @pytest.fixture(autouse=True)
@@ -300,3 +300,23 @@ def test_regenerate_recovery_code_requires_current_password(db):
 
 def test_find_account_unknown_returns_none(db):
     assert accounts.find_account(db, "ingen@example.com") is None
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 additions: 24-char codes (6×4) and the public email-format helper
+# ---------------------------------------------------------------------------
+
+def test_recovery_code_is_24_chars_in_six_groups(db):
+    _, code = _make(db)
+    groups = code.split("-")
+    assert len(groups) == accounts.CODE_GROUPS == 6
+    assert all(len(g) == accounts.CODE_GROUP_LEN == 4 for g in groups)
+    assert len(code.replace("-", "")) == 24
+
+
+def test_validate_email_format_normalizes_and_raises():
+    assert accounts.validate_email_format("  User@Example.COM ") == "user@example.com"
+    for bad in ("", "  ", "no-at-sign", "a@b", "a b@c.de", "a@@b.de"):
+        with pytest.raises(AuthError) as exc:
+            accounts.validate_email_format(bad)
+        assert exc.value.key == "auth.invalid_email"

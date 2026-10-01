@@ -64,6 +64,24 @@ def main() -> int:
     st = core_config.settings()
     init_language(st.get("language", "sv"))
 
+    # --- account gate (Phase 2, additive) ---------------------------------
+    # New user_accounts system in front of the app: Login when accounts
+    # exist, Welcome (create account / import .bokvakt) on a true first run.
+    # Legacy flow below is untouched: no accounts + wizard completed → the
+    # gate never runs and behavior is exactly as before.
+    from .auth.gate import AuthGate, accounts_exist
+    gate_account = None
+    if accounts_exist() or not st.get("wizard_completed", False):
+        gate = AuthGate()
+        if gate.exec() != AuthGate.DialogCode.Accepted:
+            gate.deleteLater()
+            return 0  # user cancelled/closed the gate — nothing to show yet
+        gate_account = gate.account
+        gate.detach()
+        gate.deleteLater()
+        # an archive import inside the gate replaces settings.json
+        st = core_config.settings()
+
     from .app import MainWindow
     win = MainWindow()
     win.restore_geometry()
@@ -79,7 +97,10 @@ def main() -> int:
         win.show_content()
     else:
         win.show()
-        if st.get("auth.enabled", False):
+        if gate_account is not None:
+            # authenticated through the new account system — skip legacy lock
+            win.show_content()
+        elif st.get("auth.enabled", False):
             win.show_lock()
         else:
             win.show_content()

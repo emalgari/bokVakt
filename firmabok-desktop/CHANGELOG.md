@@ -1,5 +1,70 @@
 # Changelog
 
+## Unreleased — Phase 2: auth UI (login, signup, recovery, forgot password)
+
+Additive only: no schema change (no migration), no existing screen, core rule
+or translation altered. The legacy app lock (`ui/lock.py` + `core/auth.py`)
+and the first-run wizard are untouched and still work exactly as before.
+
+### Added
+- `ui/auth/` package: `AuthGate` startup dialog + six bilingual screens
+  (SV/EN, instant switch via a light-variant language pill):
+  - **Login** — centered 420px card, email + password, "Remember me"
+    (stores ONLY the email in settings.json — never a password/session),
+    "Forgot password?" and "Create account" links, and visible rate-limit
+    feedback: the keyed `auth.too_many_attempts` banner plus a live
+    countdown ("Wait {n} s…") that disables the form while locked.
+  - **Signup** — display name, email, password + confirm, live strength
+    meter (pure deterministic 0–4 estimator with a small common-password
+    blocklist), show/hide eye toggles, inline validation; core `AuthError`
+    keys are mapped to the offending field.
+  - **Recovery code** — the single-use 24-char code (6 × 4 groups) shown
+    exactly once: monospace selectable display, copy / download (.txt) /
+    print, prominent warning, and a required "I have saved my recovery
+    code" checkbox that gates Continue.
+  - **Forgot password** — 3 steps (email → recovery code → new password);
+    step 1 never reveals account existence; on success the consumed code is
+    replaced, the NEW code is shown once, then the user is logged in
+    automatically.
+  - **Recovery code lost** — honest offline message (no email resets, no
+    backdoor; data stays on disk; a .bokvakt backup can be imported on a
+    fresh install) + back to login.
+  - **First-run welcome** — Create account / Import existing data (restores
+    a Phase-1 `.bokvakt` archive: password prompt → `restore_backup_archive`
+    → engine dispose → re-migrate → Login; adopts the restored language).
+- `ui/main.py` wiring (additive): accounts exist → Login gate; true first
+  run (no accounts) → Welcome gate, then the existing FirstRunWizard as
+  before; users with no accounts and a completed wizard never see the gate
+  (byte-identical legacy flow, incl. the old lock screen).
+- `core/accounts.py`: public `validate_email_format()` (UI inline checks)
+  and public `CODE_GROUPS`/`CODE_GROUP_LEN` constants (UI input mask).
+- Approved change: recovery codes upgraded 16 → **24 characters**
+  (`XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`, 6 groups of 4): `_CODE_GROUPS` 4→6;
+  the normalizer already accepted any group count, and one approved test
+  line changed (`CODE_RE` `{3}`→`{5}` in `test_accounts.py`).
+- `ui/theme.py`: appended `QToolButton#langBtnLight` QSS (light-background
+  variant of the header language pill, same design tokens).
+- 9 new Lucide-style icons: eye, eye-off, copy, printer, key-round,
+  arrow-left, user-plus, log-in, shield-check.
+- i18n: +48 keys in both catalogs (1062 → 1110, parity tested).
+- Tests: `tests/ui/test_auth_screens.py` (30) + `tests/ui/test_auth_gate.py`
+  (14) + 2 new core tests; approved one-line `CODE_RE` update.
+
+### Notes / decisions
+- "Remember me" deliberately remembers only the email; persistent
+  stay-logged-in sessions (and persistent rate limiting) are deferred to
+  the Phase 3 security settings work.
+- Core auth calls run synchronously (same pattern as the legacy lock
+  screen); an Argon2id verify takes a few hundred ms — acceptable pre-app,
+  with a "Logging in…" busy state on the button.
+- Esc = back on sub-screens; Esc on Login/Welcome/Recovery quits (same
+  semantics as cancelling the first-run wizard). The recovery screen has no
+  back button — it is the one and only showing of the code.
+- Legacy vs new auth coexist until the consolidation phase: logging in via
+  `AuthGate` skips the legacy lock screen at startup, but the header Logout
+  button still routes to the legacy lock (documented, planned for the
+  consolidation phase).
+
 ## Unreleased — Phase 1 foundation: accounts + single-file backups (core only, no UI)
 
 Additive only: one new migration (`0006` → revision `c3a7f10b0006`), no

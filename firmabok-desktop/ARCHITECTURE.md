@@ -102,6 +102,21 @@ firmabok-desktop/
 │       │   │   │                 #   5 VAT & bookkeeping → 6 Invoice defaults → 7 Summary/Finish
 │       │   │   └── import_page.py# pick source DB (web firma.db or other desktop DB), dry-run
 │       │   │                     #   counts preview, one-time guard (target must be empty)
+│       │   ├── auth/             # Phase 2: startup account gate (core.accounts UI)
+│       │   │   ├── gate.py       # AuthGate QDialog: entry decision (accounts → Login,
+│       │   │   │                 #   first run → Welcome), navigation, .bokvakt import,
+│       │   │   │                 #   auto-login after reset; accounts_exist()
+│       │   │   ├── common.py     # AuthScreenBase (centered 420px card), LanguageToggle,
+│       │   │   │                 #   PasswordField (eye toggle), strength meter (pure fn)
+│       │   │   ├── login_screen.py        # email+password, remember-EMAIL only, lockout
+│       │   │   │                          #   banner + countdown (core rate-limit feedback)
+│       │   │   ├── signup_screen.py       # name/email/password/confirm, inline validation,
+│       │   │   │                          #   AuthError→field mapping
+│       │   │   ├── recovery_code_screen.py# 24-char code (6×4) shown once: copy/download/print,
+│       │   │   │                          #   required "I saved it" checkbox gates Continue
+│       │   │   ├── forgot_password_screen.py # email → code → new password (3 steps)
+│       │   │   ├── recovery_lost_screen.py   # honest offline message, back to login
+│       │   │   └── welcome_screen.py         # first run: Create account / Import data
 │       │   ├── dialogs/
 │       │   │   ├── settings_dialog.py   # tabs: Company · Invoice · Bookkeeping · Appearance/
 │       │   │   │                        #   Language · Data paths; applies live
