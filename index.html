@@ -2,13 +2,2063 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bokvakt</title>
-    <meta name="google-site-verification" content="1Jxf19ZXOiTDjaXZqUmkvzOfkoSAm87DXzidI1Qfz4Y" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Bokvakt - Free bookkeeping for Swedish Enskild firma</title>
+<meta name="description" content="A free desktop app for Swedish sole proprietors. Handle invoices, moms, gig income, and Skatteverket reports. Your data stays on your computer." />
+<meta name="keywords" content="bokföringsprogram, enskild firma, gratis bokföring, moms, skatteverket, fakturering, open source" />
+<meta name="google-site-verification" content="1Jxf19ZXOiTDjaXZqUmkvzOfkoSAm87DXzidI1Qfz4Y" />
+<meta name="theme-color" content="#0b1a2e" />
+<link rel="canonical" href="https://emalgari.github.io/bokVakt/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Bokvakt - Free bookkeeping for Swedish Enskild firma" />
+<meta property="og:description" content="A free desktop app for Swedish sole proprietors. Invoices, moms, gig income, and reports for Skatteverket." />
+<meta property="og:url" content="https://emalgari.github.io/bokVakt/" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1a2e'/%3E%3Cpath d='M18 44V22h12a6 6 0 0 1 0 12H24v10h-6zm6-16h6a1 1 0 0 0 0-2h-6v2z' fill='%23ffd166'/%3E%3C/svg%3E" />
+
+<style>
+  :root {
+    --navy: #0b1a2e;
+    --navy-2: #102a47;
+    --navy-3: #1a3a5f;
+    --gold: #ffd166;
+    --gold-dark: #f0b429;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fb;
+    --surface: #ffffff;
+    --border: #e5e9f0;
+    --text: #0f172a;
+    --text-muted: #5b6b83;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    --shadow-md: 0 4px 16px rgba(15,23,42,.08);
+    --shadow-lg: 0 20px 40px -12px rgba(11,26,46,.25);
+    --shadow-xl: 0 32px 64px -24px rgba(11,26,46,.35);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a1424;
+      --bg-alt: #0f1d33;
+      --surface: #12203a;
+      --border: #1e2f4d;
+      --text: #e8eefb;
+      --text-muted: #8fa3c0;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    font-size: 16px;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; display: block; }
+  button { font-family: inherit; }
+
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  @media (min-width: 640px) { .container { padding: 0 24px; } }
+
+  .section { padding: 72px 0; }
+  @media (min-width: 768px) { .section { padding: 96px 0; } }
+
+  section[id] { scroll-margin-top: 84px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 22px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    text-align: center;
+    text-decoration: none;
+    min-height: 46px;
+  }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .btn-primary { background: var(--gold); color: #1a1300; box-shadow: 0 6px 20px -6px rgba(255,209,102,.6); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px -6px rgba(255,209,102,.75); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--bg-alt); }
+  .btn-dark { background: var(--navy); color: #fff; }
+  .btn-dark:hover { background: var(--navy-2); }
+  .btn-lg { padding: 16px 28px; font-size: 16px; min-height: 52px; }
+  .btn-sm { padding: 10px 16px; font-size: 14px; min-height: 40px; }
+  .btn-block { width: 100%; }
+
+  /* Header */
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    background: rgba(255,255,255,.88);
+    border-bottom: 1px solid var(--border);
+  }
+  @media (prefers-color-scheme: dark) {
+    header.site { background: rgba(10,20,36,.88); }
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    gap: 12px;
+  }
+  @media (min-width: 768px) { .nav { height: 68px; } }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -.01em;
+    flex-shrink: 0;
+  }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--navy);
+    color: var(--gold);
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: none;
+    gap: 2px;
+    align-items: center;
+    list-style: none;
+    font-size: 14.5px;
+    font-weight: 500;
+  }
+  @media (min-width: 1024px) {
+    .nav-links { display: flex; }
+  }
+  .nav-links a {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    transition: color .15s ease, background .15s ease;
+    display: inline-block;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--bg-alt); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  .lang-toggle button {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 12.5px;
+    transition: all .15s ease;
+    line-height: 1;
+  }
+  .lang-toggle button.active { background: var(--navy); color: var(--gold); }
+
+  .nav-download-btn { display: none; }
+  @media (min-width: 640px) { .nav-download-btn { display: inline-flex; } }
+
+  .mobile-menu-btn {
+    display: inline-grid;
+    place-items: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+  }
+  @media (min-width: 1024px) { .mobile-menu-btn { display: none; } }
+
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 16px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    padding: 12px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    color: var(--text);
+    font-size: 15px;
+  }
+  .mobile-menu a:hover, .mobile-menu a:focus { background: var(--bg-alt); }
+
+  /* Hero */
+  .hero {
+    padding: 56px 0 64px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--bg-alt) 0%, var(--bg) 100%);
+  }
+  @media (min-width: 768px) { .hero { padding: 80px 0; } }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255,209,102,.16), transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: -300px;
+    left: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(16,42,71,.06), transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  @media (min-width: 1024px) {
+    .hero-grid { grid-template-columns: 1.05fr 1fr; gap: 56px; }
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .eyebrow .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(22,163,74,.18);
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 54px);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    font-weight: 800;
+    margin-bottom: 20px;
+  }
+  h1 .accent { color: var(--gold-dark); }
+
+  .lede {
+    font-size: clamp(15px, 1.9vw, 18px);
+    color: var(--text-muted);
+    max-width: 560px;
+    margin-bottom: 28px;
+    line-height: 1.65;
+  }
+  @media (max-width: 1023px) { .lede { margin-left: auto; margin-right: auto; } }
+
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  @media (max-width: 1023px) { .hero-cta { justify-content: center; } }
+  @media (max-width: 480px) {
+    .hero-cta { flex-direction: column; }
+    .hero-cta .btn { width: 100%; }
+  }
+
+  .trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  @media (max-width: 1023px) { .trust { justify-content: center; } }
+  .trust span { display: inline-flex; align-items: center; gap: 6px; }
+  .trust svg { color: var(--success); flex-shrink: 0; }
+
+  /* Hero app mockup */
+  .app-mock {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255,255,255,.1);
+    background: #0f1d33;
+    position: relative;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .app-mock-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #0a1424;
+    border-bottom: 1px solid #1e2f4d;
+  }
+  .app-mock-dots { display: flex; gap: 6px; }
+  .app-mock-dots span { width: 11px; height: 11px; border-radius: 999px; }
+  .app-mock-dots span:nth-child(1) { background: #ff5f57; }
+  .app-mock-dots span:nth-child(2) { background: #febc2e; }
+  .app-mock-dots span:nth-child(3) { background: #28c840; }
+  .app-mock-title { color: #8fa3c0; font-size: 12px; font-weight: 500; margin-left: 8px; }
+
+  .app-mock-body {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    min-height: 340px;
+  }
+  @media (max-width: 520px) {
+    .app-mock-body { grid-template-columns: 120px 1fr; min-height: 300px; }
+    .app-mock-sidebar-item { font-size: 11px; padding: 6px 8px; }
+  }
+
+  .app-mock-sidebar {
+    background: #0a1424;
+    border-right: 1px solid #1e2f4d;
+    padding: 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .app-mock-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #8fa3c0;
+  }
+  .app-mock-sidebar-item.active {
+    background: rgba(255,209,102,.12);
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .app-mock-sidebar-item .dot-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: .6;
+    flex-shrink: 0;
+  }
+
+  .app-mock-main {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .app-mock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-mock-header h4 { color: #fff; font-size: 14px; font-weight: 700; }
+  .app-mock-header .pill {
+    background: rgba(22,163,74,.15);
+    color: #4ade80;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+  }
+
+  .app-mock-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .app-mock-stat {
+    background: #16263f;
+    border-radius: 8px;
+    padding: 9px;
+    border: 1px solid #1e2f4d;
+    min-width: 0;
+  }
+  .app-mock-stat .label {
+    color: #8fa3c0;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .app-mock-stat .value { color: #fff; font-size: 13px; font-weight: 800; }
+  .app-mock-stat .value.gold { color: var(--gold); }
+
+  .app-mock-table {
+    background: #16263f;
+    border-radius: 8px;
+    border: 1px solid #1e2f4d;
+    padding: 10px;
+    flex: 1;
+  }
+  .app-mock-table-title {
+    color: #8fa3c0;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .app-mock-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #1e2f4d;
+    font-size: 10.5px;
+    gap: 8px;
+  }
+  .app-mock-row:last-child { border-bottom: 0; }
+  .app-mock-row .name {
+    color: #c8d6ee;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .app-mock-row .amount { color: #4ade80; font-weight: 700; flex-shrink: 0; }
+  .app-mock-row .amount.red { color: #f87171; }
+
+  .app-mock-footer { display: flex; gap: 6px; }
+  .app-mock-footer .mini-card {
+    flex: 1;
+    background: #16263f;
+    border-radius: 6px;
+    padding: 7px;
+    border: 1px solid #1e2f4d;
+    min-width: 0;
+  }
+  .app-mock-footer .mini-label {
+    color: #8fa3c0;
+    font-size: 8.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .app-mock-footer .mini-value { color: #fff; font-size: 12px; font-weight: 800; }
+  .app-mock-footer .mini-value.gold { color: var(--gold); }
+
+  /* Value strip */
+  .strip {
+    background: var(--navy);
+    color: #fff;
+    padding: 48px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  @media (min-width: 768px) { .strip { padding: 56px 0; } }
+  .strip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(600px 300px at 80% 20%, rgba(255,209,102,.15), transparent 70%);
+    pointer-events: none;
+  }
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 16px;
+    text-align: center;
+    position: relative;
+  }
+  @media (min-width: 768px) { .value-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
+  .value-num {
+    font-size: clamp(26px, 4.5vw, 42px);
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -.02em;
+    line-height: 1.1;
+  }
+  .value-label {
+    font-size: 13px;
+    color: #c8d6ee;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  /* Section heads */
+  .section-head {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 48px;
+  }
+  @media (min-width: 768px) { .section-head { margin-bottom: 56px; } }
+  .section-head h2 {
+    font-size: clamp(24px, 4vw, 38px);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    margin-bottom: 14px;
+    line-height: 1.15;
+  }
+  .section-head p { color: var(--text-muted); font-size: 16px; line-height: 1.65; }
+  @media (min-width: 768px) { .section-head p { font-size: 17px; } }
+
+  /* Steps */
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 768px) { .steps { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 22px;
+  }
+  @media (min-width: 768px) { .step { padding: 32px 26px; } }
+  .step-num {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--gold);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 17px;
+    margin-bottom: 16px;
+  }
+  .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .step p { color: var(--text-muted); font-size: 14.5px; line-height: 1.65; }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) { .features { grid-template-columns: repeat(2, 1fr); gap: 20px; } }
+  @media (min-width: 1024px) { .features { grid-template-columns: repeat(3, 1fr); } }
+  .feature {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  @media (min-width: 768px) { .feature { padding: 26px; } }
+  .feature:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(255,209,102,.5);
+  }
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--navy), var(--navy-2));
+    color: var(--gold);
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+  }
+  .feature h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 8px; }
+  .feature p { color: var(--text-muted); font-size: 14.5px; line-height: 1.65; }
+
+  /* Screenshots */
+  .shots {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 640px) { .shots { grid-template-columns: repeat(2, 1fr); } }
+  .shot {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .shot:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .shot-bar {
+    padding: 10px 14px;
+    background: var(--navy);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .shot-body { padding: 20px; }
+  .shot-body .line {
+    height: 10px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .shot-body .line.w-40 { width: 40%; }
+  .shot-body .line.w-60 { width: 60%; }
+  .shot-body .line.w-80 { width: 80%; }
+  .shot-body .line.gold { background: var(--gold); }
+  .shot-body .stat-pair { display: flex; gap: 12px; margin-top: 16px; }
+  .shot-body .stat-pair > div {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    min-width: 0;
+  }
+  .shot-body .stat-pair .lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .shot-body .stat-pair .val { font-size: 15px; font-weight: 800; color: var(--text); }
+
+  /* Compliance */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  @media (min-width: 960px) { .info-grid { grid-template-columns: 1.1fr 1fr; gap: 56px; } }
+  .info-content h2 {
+    font-size: clamp(24px, 3.6vw, 34px);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    margin-bottom: 18px;
+    line-height: 1.15;
+  }
+  .info-content p { color: var(--text-muted); font-size: 15.5px; margin-bottom: 14px; line-height: 1.7; }
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+  .checklist li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.5; }
+  .checklist svg { color: var(--success); flex-shrink: 0; margin-top: 3px; }
+
+  .info-visual {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px;
+    box-shadow: var(--shadow-md);
+  }
+  @media (min-width: 768px) { .info-visual { padding: 32px; } }
+  .info-visual h4 {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .kv {
+    display: flex;
+    justify-content: space-between;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    gap: 12px;
+  }
+  .kv:last-child { border-bottom: 0; }
+  .kv .k { color: var(--text-muted); }
+  .kv .v { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .kv .v.gold { color: var(--gold-dark); font-size: 15.5px; }
+  .kv.big .v { font-size: 16.5px; font-weight: 800; }
+
+  /* Comparison */
+  .compare-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    -webkit-overflow-scrolling: touch;
+  }
+  table.compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    min-width: 560px;
+    background: var(--surface);
+  }
+  table.compare th, table.compare td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  @media (min-width: 768px) {
+    table.compare th, table.compare td { padding: 16px 20px; }
+  }
+  table.compare thead th {
+    background: var(--bg-alt);
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  table.compare thead th.us { background: var(--navy); color: var(--gold); }
+  table.compare tbody tr:last-child td { border-bottom: 0; }
+  table.compare td.us { background: rgba(255,209,102,.08); font-weight: 600; }
+  table.compare td.yes { color: var(--success); font-weight: 700; }
+  table.compare td.no { color: var(--danger); font-weight: 700; }
+
+  /* Download */
+  .os-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  @media (min-width: 768px) { .os-grid { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+
+  .os-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 22px;
+    text-align: center;
+    position: relative;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 768px) { .os-card { padding: 32px 24px; } }
+  .os-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .os-card.detected {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(255,209,102,.18), var(--shadow-md);
+  }
+  .os-card .badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gold);
+    color: #1a1300;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    padding: 5px 14px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    display: none;
+    white-space: nowrap;
+  }
+  .os-card.detected .badge { display: inline-block; }
+
+  .os-card .os-icon-wrap {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: var(--bg-alt);
+    color: var(--text);
+  }
+  .os-card h3 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+  .os-card .os-desc {
+    color: var(--text-muted);
+    font-size: 13.5px;
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+  .os-card .btn {
+    width: 100%;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 16px;
+    min-height: 60px;
+    line-height: 1.25;
+  }
+  .os-card .btn .btn-line-1 {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .os-card .btn .btn-line-2 {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: .75;
+  }
+  .os-card small {
+    display: block;
+    margin-top: 14px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .os-card small a { color: var(--text-muted); text-decoration: underline; }
+  .os-card small a:hover { color: var(--gold-dark); }
+
+  /* Donation */
+  .support {
+    background: linear-gradient(135deg, #fff9e6 0%, #fff4d1 100%);
+    border-radius: var(--radius-lg);
+    padding: 40px 24px;
+    text-align: center;
+    border: 1px solid rgba(240,180,41,.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    .support {
+      background: linear-gradient(135deg, rgba(255,209,102,.08) 0%, rgba(240,180,41,.05) 100%);
+      border-color: rgba(240,180,41,.25);
+    }
+  }
+  @media (min-width: 768px) { .support { padding: 56px 40px; } }
+  .support .coffee-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--gold);
+    color: #1a1300;
+    box-shadow: 0 12px 32px -8px rgba(240,180,41,.5);
+  }
+  .support h2 {
+    font-size: clamp(22px, 3.4vw, 30px);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .support p {
+    max-width: 560px;
+    margin: 0 auto 24px;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .support .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  /* Roadmap */
+  .roadmap {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 768px) { .roadmap { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+  .road-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+  .road-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .road-tag.done { background: rgba(22,163,74,.12); color: var(--success); }
+  .road-tag.now { background: rgba(255,209,102,.25); color: var(--gold-dark); }
+  .road-tag.next { background: var(--bg-alt); color: var(--text-muted); }
+  .road-item h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; }
+  .road-item p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+  /* FAQ */
+  .faq { max-width: 820px; margin: 0 auto; }
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: border-color .2s ease;
+  }
+  @media (min-width: 768px) { details { padding: 18px 22px; } }
+  details[open] { border-color: rgba(255,209,102,.5); }
+  details summary {
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    line-height: 1.5;
+  }
+  @media (min-width: 768px) { details summary { font-size: 15.5px; } }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after {
+    content: "+";
+    font-size: 22px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    line-height: 1;
+    font-weight: 300;
+  }
+  details[open] summary::after { content: "\2212"; }
+  details p {
+    color: var(--text-muted);
+    margin-top: 12px;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+
+  /* CTA band */
+  .cta-band {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 50%, var(--navy-3) 100%);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 44px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  @media (min-width: 768px) { .cta-band { padding: 64px 40px; } }
+  .cta-band::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(600px 300px at 80% 10%, rgba(255,209,102,.25), transparent 70%);
+    pointer-events: none;
+  }
+  .cta-band h2 {
+    color: #fff;
+    font-size: clamp(22px, 3.6vw, 34px);
+    margin-bottom: 12px;
+    position: relative;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+  }
+  .cta-band p {
+    color: #c8d6ee;
+    max-width: 520px;
+    margin: 0 auto 26px;
+    position: relative;
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+  .cta-band .btn { position: relative; }
+
+  /* Footer */
+  footer.site {
+    border-top: 1px solid var(--border);
+    background: var(--bg-alt);
+    padding: 48px 0 28px;
+    margin-top: 72px;
+  }
+  @media (min-width: 768px) { footer.site { padding: 56px 0 32px; margin-top: 96px; } }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 36px;
+  }
+  @media (min-width: 640px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; } }
+  @media (min-width: 900px) { .footer-grid { grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; } }
+  .footer-brand p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 14px;
+    max-width: 320px;
+    line-height: 1.65;
+  }
+  .footer-col h4 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-col a { color: var(--text); font-size: 14px; transition: color .15s ease; }
+  .footer-col a:hover { color: var(--gold-dark); }
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* Back to top */
+  .back-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--gold);
+    border: 0;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .2s ease, background .2s ease;
+    z-index: 40;
+  }
+  @media (min-width: 768px) { .back-top { bottom: 24px; right: 24px; } }
+  .back-top.show { opacity: 1; pointer-events: auto; }
+  .back-top:hover { background: var(--navy-2); transform: translateY(-2px); }
+
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 8px;
+    background: var(--navy);
+    color: var(--gold);
+    padding: 10px 14px;
+    border-radius: 8px;
+    z-index: 100;
+    font-size: 14px;
+  }
+  .skip:focus { left: 16px; }
+</style>
 </head>
 <body>
-    <h1>Bokvakt</h1>
-    <p>Free open-source bookkeeping software for Swedish Enskild firma.</p>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="container">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span>Bokvakt</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#how" data-i18n="nav.how">How it works</a></li>
+        <li><a href="#features" data-i18n="nav.features">Features</a></li>
+        <li><a href="#screenshots" data-i18n="nav.shots">Screenshots</a></li>
+        <li><a href="#download" data-i18n="nav.download">Download</a></li>
+        <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
+        <li><a href="https://github.com/emalgari/bokVakt" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+      <div class="nav-actions">
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button id="lang-en" type="button" onclick="setLanguage('en')">EN</button>
+          <button id="lang-sv" type="button" onclick="setLanguage('sv')">SV</button>
+        </div>
+        <a class="btn btn-dark btn-sm nav-download-btn" href="#download" data-i18n="nav.downloadBtn">Download</a>
+        <button class="mobile-menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#how" data-i18n="nav.how">How it works</a>
+    <a href="#features" data-i18n="nav.features">Features</a>
+    <a href="#screenshots" data-i18n="nav.shots">Screenshots</a>
+    <a href="#download" data-i18n="nav.download">Download</a>
+    <a href="#faq" data-i18n="nav.faq">FAQ</a>
+    <a href="https://github.com/emalgari/bokVakt" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow"><span class="dot"></span><span data-i18n="hero.badge">Free and open source, forever</span></span>
+        <h1>
+          <span data-i18n="hero.title1">Bookkeeping for your</span>
+          <span class="accent" data-i18n="hero.title2">Enskild firma</span>
+          <span data-i18n="hero.title3">without the cloud.</span>
+        </h1>
+        <p class="lede" data-i18n="hero.lede">I built Bokvakt because I got tired of cloud tools that keep your books on someone else's server. It's a normal desktop app you install on your computer. Handle invoices, moms, gig income, and reports for Skatteverket. Your data stays with you.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#download">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14m0 0l-5-5m5 5l5-5M5 21h14"/></svg>
+            <span id="heroDownloadLabel" data-i18n="hero.download">Download Bokvakt</span>
+          </a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/emalgari/bokVakt" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.7 5.5.7 11.8c0 5 3.2 9.3 7.7 10.8.6.1.8-.3.8-.6v-2c-3.1.7-3.8-1.5-3.8-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.7 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.6 0-1.2.4-2.3 1.1-3.1-.1-.3-.5-1.5.1-3 0 0 1-.3 3.2 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.7.1 3 .7.8 1.1 1.9 1.1 3.1 0 4.4-2.6 5.3-5.2 5.6.4.4.7 1 .7 2.1v3.1c0 .3.2.7.8.6 4.5-1.5 7.7-5.8 7.7-10.8C23.3 5.5 18.3.5 12 .5z"/></svg>
+            <span data-i18n="hero.github">View source on GitHub</span>
+          </a>
+        </div>
+        <div class="trust">
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="trust.noCloud">No cloud</span></span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="trust.noTelemetry">No tracking</span></span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="trust.offline">Works offline</span></span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="trust.bilingual">Svenska and English</span></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="app-mock">
+          <div class="app-mock-titlebar">
+            <div class="app-mock-dots"><span></span><span></span><span></span></div>
+            <div class="app-mock-title">Bokvakt Dashboard</div>
+          </div>
+          <div class="app-mock-body">
+            <aside class="app-mock-sidebar">
+              <div class="app-mock-sidebar-item active"><span class="dot-icon"></span>Dashboard</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>Income</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>Expenses</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>Invoices</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>VAT / Moms</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>Reports</div>
+              <div class="app-mock-sidebar-item"><span class="dot-icon"></span>Settings</div>
+            </aside>
+            <div class="app-mock-main">
+              <div class="app-mock-header">
+                <h4>Overview</h4>
+                <span class="pill">LIVE</span>
+              </div>
+              <div class="app-mock-stats">
+                <div class="app-mock-stat">
+                  <div class="label">Income</div>
+                  <div class="value">42 500</div>
+                </div>
+                <div class="app-mock-stat">
+                  <div class="label">Expenses</div>
+                  <div class="value">12 300</div>
+                </div>
+                <div class="app-mock-stat">
+                  <div class="label">Net</div>
+                  <div class="value gold">30 200</div>
+                </div>
+              </div>
+              <div class="app-mock-table">
+                <div class="app-mock-table-title">Recent activity</div>
+                <div class="app-mock-row"><span class="name">Uber payout</span><span class="amount">+8 420</span></div>
+                <div class="app-mock-row"><span class="name">Bolt payout</span><span class="amount">+6 180</span></div>
+                <div class="app-mock-row"><span class="name">Invoice 2026-0042</span><span class="amount">+18 750</span></div>
+                <div class="app-mock-row"><span class="name">Transportstyrelsen</span><span class="amount red">-2 100</span></div>
+                <div class="app-mock-row"><span class="name">Fuel</span><span class="amount red">-1 890</span></div>
+              </div>
+              <div class="app-mock-footer">
+                <div class="mini-card">
+                  <div class="mini-label">Moms to pay</div>
+                  <div class="mini-value gold">7 560</div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-label">To invoice</div>
+                  <div class="mini-value">8 000</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="container">
+    <div class="value-grid">
+      <div><div class="value-num">100%</div><div class="value-label" data-i18n="value.free">Free forever</div></div>
+      <div><div class="value-num">0 kr</div><div class="value-label" data-i18n="value.sub">Monthly cost</div></div>
+      <div><div class="value-num">3</div><div class="value-label" data-i18n="value.os">Operating systems</div></div>
+      <div><div class="value-num">2</div><div class="value-label" data-i18n="value.langs">Languages</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="how.title">Up and running in three minutes</h2>
+      <p data-i18n="how.sub">No Python to install. No terminal to open. Just download the app, install it like any other program, and start bookkeeping.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-i18n="how.s1.t">Download and install</h3>
+        <p data-i18n="how.s1.d">Grab the installer for your operating system. Double-click it. Done. Bokvakt installs like any normal desktop app, no extra steps.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-i18n="how.s2.t">Set up your company</h3>
+        <p data-i18n="how.s2.d">A short wizard asks for your company details, org number, VAT number, and bank info. Save your recovery code somewhere safe and you're done.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-i18n="how.s3.t">Start bookkeeping</h3>
+        <p data-i18n="how.s3.d">Add income and expenses as they happen. Create invoices. Bokvakt keeps track of moms, your running balance, and prepares reports for Skatteverket.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features" style="background:var(--bg-alt); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="features.title">Everything you need for Enskild firma</h2>
+      <p data-i18n="features.sub">Built for Swedish sole proprietorships. Nothing extra, nothing you don't need, nothing locked behind a paywall.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <h3 data-i18n="feat.invoice.t">Swedish invoicing</h3>
+        <p data-i18n="feat.invoice.d">Professional PDF invoices with sequential numbering, OCR reference, and a proper moms breakdown. Correct every time.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div>
+        <h3 data-i18n="feat.vat.t">VAT and moms</h3>
+        <p data-i18n="feat.vat.d">Output and input VAT, quarterly declarations, and the SKV 4700 boxes mapped for you. Moms is calculated on sales, never on profit.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="2"/><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M2 12h20"/></svg></div>
+        <h3 data-i18n="feat.gig.t">Gig income</h3>
+        <p data-i18n="feat.gig.d">Log weekly or monthly income from Uber, Bolt, or any platform you work with. See totals per platform automatically.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3 data-i18n="feat.balance.t">Running balance</h3>
+        <p data-i18n="feat.balance.d">See at a glance what you've earned, what you've invoiced, what's still to invoice, and roughly what you owe in tax.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h3 data-i18n="feat.payroll.t">Payroll and salary slips</h3>
+        <p data-i18n="feat.payroll.d">If you have employees, you can add them, generate Swedish salary slips, and track employer contributions and A-skatt.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3 data-i18n="feat.security.t">Private by design</h3>
+        <p data-i18n="feat.security.d">Your data lives in a local database on your computer. Accounts are secured with Argon2id. Backups are encrypted. Nothing leaves your machine.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3 data-i18n="feat.reports.t">Reports for Skatteverket</h3>
+        <p data-i18n="feat.reports.d">Momsdeklaration boxes, quarterly summaries, profit and loss, and CSV exports you can use when you file.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7"/></svg></div>
+        <h3 data-i18n="feat.backup.t">Encrypted backups</h3>
+        <p data-i18n="feat.backup.d">One-click backups saved as .bokvakt files, encrypted with AES-256. Restore them anywhere, anytime, on any computer.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01"/></svg></div>
+        <h3 data-i18n="feat.multiuser.t">Multiple accounts</h3>
+        <p data-i18n="feat.multiuser.d">Create separate local accounts with proper passwords. Useful if you share the computer with family or colleagues.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="screenshots">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="shots.title">A clean, focused interface</h2>
+      <p data-i18n="shots.sub">Designed to stay out of your way while you get work done.</p>
+    </div>
+    <div class="shots">
+      <div class="shot">
+        <div class="shot-bar" data-i18n="shots.dash">Dashboard</div>
+        <div class="shot-body">
+          <div class="line w-40 gold"></div>
+          <div class="line w-80"></div>
+          <div class="line w-60"></div>
+          <div class="stat-pair">
+            <div><div class="lbl" data-i18n="shots.income">Income</div><div class="val">42 500 kr</div></div>
+            <div><div class="lbl" data-i18n="shots.net">Net</div><div class="val">30 200 kr</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="shot-bar" data-i18n="shots.invoice">Invoice PDF</div>
+        <div class="shot-body">
+          <div class="line w-60 gold"></div>
+          <div class="line w-80"></div>
+          <div class="line w-40"></div>
+          <div class="line w-80"></div>
+          <div class="line w-60"></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="shot-bar" data-i18n="shots.vat">VAT and moms</div>
+        <div class="shot-body">
+          <div class="line w-40 gold"></div>
+          <div class="line w-80"></div>
+          <div class="line w-80"></div>
+          <div class="stat-pair">
+            <div><div class="lbl" data-i18n="shots.outvat">Output VAT</div><div class="val">10 000 kr</div></div>
+            <div><div class="lbl" data-i18n="shots.invat">Input VAT</div><div class="val">-3 000 kr</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="shot-bar" data-i18n="shots.gig">Gig income</div>
+        <div class="shot-body">
+          <div class="line w-60 gold"></div>
+          <div class="line w-80"></div>
+          <div class="line w-40"></div>
+          <div class="stat-pair">
+            <div><div class="lbl">Uber</div><div class="val">18 420 kr</div></div>
+            <div><div class="lbl">Bolt</div><div class="val">12 180 kr</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--bg-alt); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="info-grid">
+      <div class="info-content">
+        <h2 data-i18n="compliance.title">Built on the real Swedish rules</h2>
+        <p data-i18n="compliance.p1">Bokvakt follows the Swedish moms rule that a lot of cheap tools get wrong. Moms is calculated on taxable sales, never on your profit.</p>
+        <p data-i18n="compliance.p2">Every calculation follows ML 1994:200 and maps directly onto the SKV 4700 momsdeklaration. Bokslutsmetoden is supported out of the box.</p>
+        <ul class="checklist">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c1">Output VAT on sales at 25, 12, and 6 percent</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c2">Deductible input VAT on business expenses</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c3">Box 49 net VAT using the whole kronor rule</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c4">Owner withdrawals kept out of profit and loss</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c5">Reverse charge for EU B2B and byggtjanster</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="compliance.c6">Sequential invoice numbering with no gaps</span></li>
+        </ul>
+      </div>
+      <div class="info-visual">
+        <h4 data-i18n="compliance.exTitle">A quick example</h4>
+        <div class="kv"><span class="k" data-i18n="compliance.k1">Sales including moms</span><span class="v">50 000 kr</span></div>
+        <div class="kv"><span class="k" data-i18n="compliance.k2">Net sales, moms removed</span><span class="v">40 000 kr</span></div>
+        <div class="kv"><span class="k" data-i18n="compliance.k3">Output VAT at 25 percent</span><span class="v">10 000 kr</span></div>
+        <div class="kv"><span class="k" data-i18n="compliance.k4">Expenses, moms removed</span><span class="v">-15 000 kr</span></div>
+        <div class="kv"><span class="k" data-i18n="compliance.k5">Input VAT to deduct</span><span class="v">-3 000 kr</span></div>
+        <div class="kv big"><span class="k" data-i18n="compliance.k6">Moms to pay</span><span class="v gold">7 000 kr</span></div>
+        <div class="kv big"><span class="k" data-i18n="compliance.k7">Net result</span><span class="v gold">25 000 kr</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="compare.title">How Bokvakt compares</h2>
+      <p data-i18n="compare.sub">A quick look at what you get with a local, open source tool versus a typical cloud service.</p>
+    </div>
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th data-i18n="compare.col">What matters</th>
+            <th class="us">Bokvakt</th>
+            <th data-i18n="compare.cloud">Typical cloud service</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="compare.r2">Where your data lives</td><td class="us" data-i18n="compare.r2a">Your computer</td><td data-i18n="compare.r2b">Their servers</td></tr>
+          <tr><td data-i18n="compare.r3">Works without internet</td><td class="us yes" data-i18n="compare.yes">Yes</td><td class="no" data-i18n="compare.no">No</td></tr>
+          <tr><td data-i18n="compare.r4">Open source</td><td class="us yes" data-i18n="compare.yes2">Yes</td><td class="no" data-i18n="compare.no2">No</td></tr>
+          <tr><td data-i18n="compare.r5">Gig income tracking</td><td class="us yes" data-i18n="compare.yes3">Yes</td><td data-i18n="compare.maybe">Rarely</td></tr>
+          <tr><td data-i18n="compare.r6">Payroll and salary slips</td><td class="us yes" data-i18n="compare.yes4">Yes</td><td data-i18n="compare.maybe2">Usually extra</td></tr>
+          <tr><td data-i18n="compare.r7">Moms declarations</td><td class="us yes" data-i18n="compare.yes5">Yes</td><td data-i18n="compare.yes6">Yes</td></tr>
+          <tr><td data-i18n="compare.r8">Both Swedish and English</td><td class="us yes" data-i18n="compare.yes7">Yes</td><td data-i18n="compare.maybe3">Varies</td></tr>
+          <tr><td data-i18n="compare.r9">You can read the code</td><td class="us yes" data-i18n="compare.yes8">Yes</td><td class="no" data-i18n="compare.no3">No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="download" style="background:var(--bg-alt); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="dl.title">Download Bokvakt</h2>
+      <p data-i18n="dl.sub">Pick your operating system. Installing takes about a minute. No Python, no terminal, no setup files to edit.</p>
+    </div>
+    <div class="os-grid">
+      <div class="os-card" data-os="windows">
+        <div class="badge" data-i18n="dl.badge">Your system</div>
+        <div class="os-icon-wrap">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3v-6zm0 13l7.5 1v-7H3v6zm8.5-14.2L21 3v8.5h-9.5V4.3zM11.5 12H21v8.5l-9.5-1.3V12z"/></svg>
+        </div>
+        <h3>Windows</h3>
+        <p class="os-desc" data-i18n="dl.win.desc">Windows 10 or 11, 64-bit</p>
+        <a class="btn btn-primary" href="https://github.com/emalgari/bokVakt/releases/latest/download/Bokvakt-Windows-x64.msi">
+          <span class="btn-line-1" data-i18n="dl.win.btn">Download for Windows</span>
+          <span class="btn-line-2">.msi installer</span>
+        </a>
+        <small data-i18n="dl.win.hint">Adds a shortcut to your Start Menu</small>
+      </div>
+      <div class="os-card" data-os="mac">
+        <div class="badge" data-i18n="dl.badge">Your system</div>
+        <div class="os-icon-wrap">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.4 2-3.5 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9-.8 0-1.9-.9-3.2-.85-1.6 0-3.1 1-3.95 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.15 1.7 2.45 3 2.4 1.2 0 1.7-.75 3.1-.75s1.9.75 3.2.75c1.3 0 2.15-1.2 2.95-2.35.95-1.35 1.3-2.65 1.35-2.7-.05-.05-2.6-1-2.6-3.9zM13.9 5.5c.65-.8 1.1-1.9.95-3-.9.05-2 .6-2.7 1.4-.6.7-1.15 1.85-1 2.9 1 .1 2.05-.5 2.75-1.3z"/></svg>
+        </div>
+        <h3>macOS</h3>
+        <p class="os-desc" data-i18n="dl.mac.desc">macOS 12 or later, Intel and Apple Silicon</p>
+        <a class="btn btn-primary" href="https://github.com/emalgari/bokVakt/releases/latest/download/Bokvakt-macOS-Universal.dmg">
+          <span class="btn-line-1" data-i18n="dl.mac.btn">Download for macOS</span>
+          <span class="btn-line-2">.dmg installer</span>
+        </a>
+        <small data-i18n="dl.mac.hint">Drag the app to your Applications folder</small>
+      </div>
+      <div class="os-card" data-os="linux">
+        <div class="badge" data-i18n="dl.badge">Your system</div>
+        <div class="os-icon-wrap">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c-2.4 0-3.5 2-3.5 4 0 1.4.2 2.4.2 3.5-.6.6-2.7 3-2.7 6.5 0 1.4.4 2.6 1.2 3.4-.2.4-.5.8-.5 1.4 0 1.4 1.5 2.2 2.7 2.2.5 0 1-.1 1.4-.3.4.4 1 .6 1.7.6s1.3-.2 1.7-.6c.4.2.9.3 1.4.3 1.2 0 2.7-.8 2.7-2.2 0-.6-.3-1-.5-1.4.8-.8 1.2-2 1.2-3.4 0-3.5-2.1-5.9-2.7-6.5 0-1.1.2-2.1.2-3.5 0-2-1.1-4-3.5-4zm-1.5 4.5c.4 0 .8.4.8.8s-.4.8-.8.8-.8-.4-.8-.8.4-.8.8-.8zm3 0c.4 0 .8.4.8.8s-.4.8-.8.8-.8-.4-.8-.8.4-.8.8-.8zM9 20.5c-.3 0-.7.1-1 .2-.4.2-.7.5-.7.7 0 .3.4.5 1 .5.5 0 1-.1 1.4-.4-.3-.3-.5-.6-.7-1zm6 0c-.2.4-.4.7-.7 1 .4.3.9.4 1.4.4.6 0 1-.2 1-.5 0-.2-.3-.5-.7-.7-.3-.1-.7-.2-1-.2z"/></svg>
+        </div>
+        <h3>Linux</h3>
+        <p class="os-desc" data-i18n="dl.linux.desc">Any distro, plus Debian and Ubuntu packages</p>
+        <a class="btn btn-primary" href="https://github.com/emalgari/bokVakt/releases/latest/download/Bokvakt-Linux-x86_64.AppImage">
+          <span class="btn-line-1" data-i18n="dl.linux.btn">Download for Linux</span>
+          <span class="btn-line-2">.AppImage, runs anywhere</span>
+        </a>
+        <small><a href="https://github.com/emalgari/bokVakt/releases/latest/download/Bokvakt-Linux-amd64.deb" data-i18n="dl.linux.alt">Or get the .deb package</a></small>
+      </div>
+    </div>
+    <p style="text-align:center; margin-top:32px; color:var(--text-muted); font-size:14px;">
+      <span data-i18n="dl.verify">All releases are published on</span>
+      <a href="https://github.com/emalgari/bokVakt/releases" target="_blank" rel="noopener" style="color:var(--gold-dark); text-decoration:underline; font-weight:600;">GitHub Releases</a>
+      <span data-i18n="dl.verify2">with SHA-256 checksums so you can verify what you downloaded.</span>
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="support">
+      <div class="coffee-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>
+      </div>
+      <h2 data-i18n="support.title">Bokvakt is free and always will be</h2>
+      <p data-i18n="support.text">I built this on my own time because I needed it myself. If it saves you time or money, and you'd like to say thanks, you can buy me a coffee. It helps cover the time I spend making Bokvakt better.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="https://github.com/sponsors/emalgari" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span data-i18n="support.btn">Buy me a coffee</span>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/emalgari/bokVakt" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.7 5.5.7 11.8c0 5 3.2 9.3 7.7 10.8.6.1.8-.3.8-.6v-2c-3.1.7-3.8-1.5-3.8-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.7 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.6 0-1.2.4-2.3 1.1-3.1-.1-.3-.5-1.5.1-3 0 0 1-.3 3.2 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.7.1 3 .7.8 1.1 1.9 1.1 3.1 0 4.4-2.6 5.3-5.2 5.6.4.4.7 1 .7 2.1v3.1c0 .3.2.7.8.6 4.5-1.5 7.7-5.8 7.7-10.8C23.3 5.5 18.3.5 12 .5z"/></svg>
+          <span data-i18n="support.star">Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="road.title">Roadmap</h2>
+      <p data-i18n="road.sub">What's done, what I'm working on now, and what's coming next.</p>
+    </div>
+    <div class="roadmap">
+      <div class="road-item">
+        <span class="road-tag done" data-i18n="road.tagDone">Done</span>
+        <h3 data-i18n="road.r1.t">Core bookkeeping</h3>
+        <p data-i18n="road.r1.d">Income, expenses, invoices, moms declarations, profit and loss, backups, and a bilingual interface.</p>
+      </div>
+      <div class="road-item">
+        <span class="road-tag now" data-i18n="road.tagNow">In progress</span>
+        <h3 data-i18n="road.r2.t">Accounts and security</h3>
+        <p data-i18n="road.r2.d">Local accounts secured with Argon2id, recovery codes, auto-lock, and encrypted backups.</p>
+      </div>
+      <div class="road-item">
+        <span class="road-tag next" data-i18n="road.tagNext">Coming next</span>
+        <h3 data-i18n="road.r3.t">One-click installers</h3>
+        <p data-i18n="road.r3.d">Windows .msi, macOS .dmg, and Linux .AppImage so anyone can install Bokvakt in a minute.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq" style="background:var(--bg-alt); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-head">
+      <h2 data-i18n="faq.title">Questions people ask</h2>
+      <p data-i18n="faq.sub">Quick answers about Bokvakt, your data, and Swedish bookkeeping.</p>
+    </div>
+    <div class="faq">
+      <details>
+        <summary data-i18n="faq.q1">Is Bokvakt really free?</summary>
+        <p data-i18n="faq.a1">Yes. Bokvakt is open source under the MIT license. There's no paid version, no subscription, and no hidden fee. You can read the source code, change it, and share it if you want.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q2">Where does my data go?</summary>
+        <p data-i18n="faq.a2">Nowhere. Everything stays in a local database on your computer. Bokvakt doesn't send anything to any server. You can back up your data as an encrypted .bokvakt file and move it wherever you want.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q3">Does it follow the Skatteverket rules?</summary>
+        <p data-i18n="faq.a3">Bokvakt follows the Swedish moms rules in ML 1994:200 and maps everything to the SKV 4700 momsdeklaration boxes. It supports bokslutsmetoden too. You still review and file everything yourself in Skatteverket's e-services. Bokvakt helps prepare the numbers, it doesn't file them for you.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q4">Can I use it without internet?</summary>
+        <p data-i18n="faq.a4">Yes, completely. Bokvakt is local-first. You can use it on a plane, at a cabin, or any time your internet is down. Backups can go to any folder you choose, including one you sync with a service you already use.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q5">Which languages does it support?</summary>
+        <p data-i18n="faq.a5">Swedish and English. You can switch anytime with one click. Invoice PDFs and salary slips stay in Swedish, since those need to follow Swedish rules.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q6">Can I track Uber, Bolt, and similar income?</summary>
+        <p data-i18n="faq.a6">Yes. You can record income from any platform such as Uber, Bolt, Foodora, Wolt, or something custom. Weekly or monthly totals are grouped automatically, and you can create invoices for the companies you provided services to.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q7">Do I need to be technical?</summary>
+        <p data-i18n="faq.a7">No. Bokvakt installs like any other desktop app. The first time you open it, a short wizard walks you through the setup. If you can use a browser, you can use Bokvakt.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q8">Can I contribute or report bugs?</summary>
+        <p data-i18n="faq.a8">Absolutely. The whole project is on GitHub at github.com/emalgari/bokVakt. You can open an issue if something's broken, or send a pull request if you want to help improve it.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="cta-band">
+      <h2 data-i18n="cta.title">Ready to give it a try?</h2>
+      <p data-i18n="cta.sub">Download Bokvakt, set up your company in a few minutes, and start keeping your books the way you want.</p>
+      <a class="btn btn-primary btn-lg" href="#download">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14m0 0l-5-5m5 5l5-5M5 21h14"/></svg>
+        <span data-i18n="cta.btn">Download Bokvakt</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="#top"><span class="brand-mark">B</span><span>Bokvakt</span></a>
+        <p data-i18n="footer.tagline">A free, open source bookkeeping app for Swedish Enskild firma. Runs on your computer. No cloud, no subscriptions.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.product">Product</h4>
+        <ul>
+          <li><a href="#features" data-i18n="nav.features">Features</a></li>
+          <li><a href="#screenshots" data-i18n="nav.shots">Screenshots</a></li>
+          <li><a href="#download" data-i18n="nav.download">Download</a></li>
+          <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.project">Project</h4>
+        <ul>
+          <li><a href="https://github.com/emalgari/bokVakt" target="_blank" rel="noopener">Source code</a></li>
+          <li><a href="https://github.com/emalgari/bokVakt/releases" target="_blank" rel="noopener">Releases</a></li>
+          <li><a href="https://github.com/emalgari/bokVakt/issues" target="_blank" rel="noopener">Report an issue</a></li>
+          <li><a href="https://github.com/sponsors/emalgari" target="_blank" rel="noopener">Buy me a coffee</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.legal">Legal</h4>
+        <ul>
+          <li><a href="https://github.com/emalgari/bokVakt/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> Bokvakt. <span data-i18n="footer.mit">Open source under the MIT license.</span></span>
+    </div>
+  </div>
+</footer>
+
+<button class="back-top" id="backTop" aria-label="Back to top" type="button">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script>
+var I18N = {
+  en: {
+    "nav.how": "How it works",
+    "nav.features": "Features",
+    "nav.shots": "Screenshots",
+    "nav.download": "Download",
+    "nav.faq": "FAQ",
+    "nav.downloadBtn": "Download",
+    "hero.badge": "Free and open source, forever",
+    "hero.title1": "Bookkeeping for your",
+    "hero.title2": "Enskild firma",
+    "hero.title3": "without the cloud.",
+    "hero.lede": "I built Bokvakt because I got tired of cloud tools that keep your books on someone else's server. It's a normal desktop app you install on your computer. Handle invoices, moms, gig income, and reports for Skatteverket. Your data stays with you.",
+    "hero.download": "Download Bokvakt",
+    "hero.github": "View source on GitHub",
+    "trust.noCloud": "No cloud",
+    "trust.noTelemetry": "No tracking",
+    "trust.offline": "Works offline",
+    "trust.bilingual": "Svenska and English",
+    "value.free": "Free forever",
+    "value.sub": "Monthly cost",
+    "value.os": "Operating systems",
+    "value.langs": "Languages",
+    "how.title": "Up and running in three minutes",
+    "how.sub": "No Python to install. No terminal to open. Just download the app, install it like any other program, and start bookkeeping.",
+    "how.s1.t": "Download and install",
+    "how.s1.d": "Grab the installer for your operating system. Double-click it. Done. Bokvakt installs like any normal desktop app, no extra steps.",
+    "how.s2.t": "Set up your company",
+    "how.s2.d": "A short wizard asks for your company details, org number, VAT number, and bank info. Save your recovery code somewhere safe and you're done.",
+    "how.s3.t": "Start bookkeeping",
+    "how.s3.d": "Add income and expenses as they happen. Create invoices. Bokvakt keeps track of moms, your running balance, and prepares reports for Skatteverket.",
+    "features.title": "Everything you need for Enskild firma",
+    "features.sub": "Built for Swedish sole proprietorships. Nothing extra, nothing you don't need, nothing locked behind a paywall.",
+    "feat.invoice.t": "Swedish invoicing",
+    "feat.invoice.d": "Professional PDF invoices with sequential numbering, OCR reference, and a proper moms breakdown. Correct every time.",
+    "feat.vat.t": "VAT and moms",
+    "feat.vat.d": "Output and input VAT, quarterly declarations, and the SKV 4700 boxes mapped for you. Moms is calculated on sales, never on profit.",
+    "feat.gig.t": "Gig income",
+    "feat.gig.d": "Log weekly or monthly income from Uber, Bolt, or any platform you work with. See totals per platform automatically.",
+    "feat.balance.t": "Running balance",
+    "feat.balance.d": "See at a glance what you've earned, what you've invoiced, what's still to invoice, and roughly what you owe in tax.",
+    "feat.payroll.t": "Payroll and salary slips",
+    "feat.payroll.d": "If you have employees, you can add them, generate Swedish salary slips, and track employer contributions and A-skatt.",
+    "feat.security.t": "Private by design",
+    "feat.security.d": "Your data lives in a local database on your computer. Accounts are secured with Argon2id. Backups are encrypted. Nothing leaves your machine.",
+    "feat.reports.t": "Reports for Skatteverket",
+    "feat.reports.d": "Momsdeklaration boxes, quarterly summaries, profit and loss, and CSV exports you can use when you file.",
+    "feat.backup.t": "Encrypted backups",
+    "feat.backup.d": "One-click backups saved as .bokvakt files, encrypted with AES-256. Restore them anywhere, anytime, on any computer.",
+    "feat.multiuser.t": "Multiple accounts",
+    "feat.multiuser.d": "Create separate local accounts with proper passwords. Useful if you share the computer with family or colleagues.",
+    "shots.title": "A clean, focused interface",
+    "shots.sub": "Designed to stay out of your way while you get work done.",
+    "shots.dash": "Dashboard",
+    "shots.invoice": "Invoice PDF",
+    "shots.vat": "VAT and moms",
+    "shots.gig": "Gig income",
+    "shots.income": "Income",
+    "shots.net": "Net",
+    "shots.outvat": "Output VAT",
+    "shots.invat": "Input VAT",
+    "compliance.title": "Built on the real Swedish rules",
+    "compliance.p1": "Bokvakt follows the Swedish moms rule that a lot of cheap tools get wrong. Moms is calculated on taxable sales, never on your profit.",
+    "compliance.p2": "Every calculation follows ML 1994:200 and maps directly onto the SKV 4700 momsdeklaration. Bokslutsmetoden is supported out of the box.",
+    "compliance.c1": "Output VAT on sales at 25, 12, and 6 percent",
+    "compliance.c2": "Deductible input VAT on business expenses",
+    "compliance.c3": "Box 49 net VAT using the whole kronor rule",
+    "compliance.c4": "Owner withdrawals kept out of profit and loss",
+    "compliance.c5": "Reverse charge for EU B2B and byggtjanster",
+    "compliance.c6": "Sequential invoice numbering with no gaps",
+    "compliance.exTitle": "A quick example",
+    "compliance.k1": "Sales including moms",
+    "compliance.k2": "Net sales, moms removed",
+    "compliance.k3": "Output VAT at 25 percent",
+    "compliance.k4": "Expenses, moms removed",
+    "compliance.k5": "Input VAT to deduct",
+    "compliance.k6": "Moms to pay",
+    "compliance.k7": "Net result",
+    "compare.title": "How Bokvakt compares",
+    "compare.sub": "A quick look at what you get with a local, open source tool versus a typical cloud service.",
+    "compare.col": "What matters",
+    "compare.cloud": "Typical cloud service",
+    "compare.r2": "Where your data lives",
+    "compare.r2a": "Your computer",
+    "compare.r2b": "Their servers",
+    "compare.r3": "Works without internet",
+    "compare.yes": "Yes",
+    "compare.no": "No",
+    "compare.r4": "Open source",
+    "compare.yes2": "Yes",
+    "compare.no2": "No",
+    "compare.r5": "Gig income tracking",
+    "compare.yes3": "Yes",
+    "compare.maybe": "Rarely",
+    "compare.r6": "Payroll and salary slips",
+    "compare.yes4": "Yes",
+    "compare.maybe2": "Usually extra",
+    "compare.r7": "Moms declarations",
+    "compare.yes5": "Yes",
+    "compare.yes6": "Yes",
+    "compare.r8": "Both Swedish and English",
+    "compare.yes7": "Yes",
+    "compare.maybe3": "Varies",
+    "compare.r9": "You can read the code",
+    "compare.yes8": "Yes",
+    "compare.no3": "No",
+    "dl.title": "Download Bokvakt",
+    "dl.sub": "Pick your operating system. Installing takes about a minute. No Python, no terminal, no setup files to edit.",
+    "dl.badge": "Your system",
+    "dl.win.desc": "Windows 10 or 11, 64-bit",
+    "dl.win.btn": "Download for Windows",
+    "dl.win.hint": "Adds a shortcut to your Start Menu",
+    "dl.mac.desc": "macOS 12 or later, Intel and Apple Silicon",
+    "dl.mac.btn": "Download for macOS",
+    "dl.mac.hint": "Drag the app to your Applications folder",
+    "dl.linux.desc": "Any distro, plus Debian and Ubuntu packages",
+    "dl.linux.btn": "Download for Linux",
+    "dl.linux.alt": "Or get the .deb package",
+    "dl.verify": "All releases are published on",
+    "dl.verify2": "with SHA-256 checksums so you can verify what you downloaded.",
+    "support.title": "Bokvakt is free and always will be",
+    "support.text": "I built this on my own time because I needed it myself. If it saves you time or money, and you'd like to say thanks, you can buy me a coffee. It helps cover the time I spend making Bokvakt better.",
+    "support.btn": "Buy me a coffee",
+    "support.star": "Star on GitHub",
+    "road.title": "Roadmap",
+    "road.sub": "What's done, what I'm working on now, and what's coming next.",
+    "road.tagDone": "Done",
+    "road.tagNow": "In progress",
+    "road.tagNext": "Coming next",
+    "road.r1.t": "Core bookkeeping",
+    "road.r1.d": "Income, expenses, invoices, moms declarations, profit and loss, backups, and a bilingual interface.",
+    "road.r2.t": "Accounts and security",
+    "road.r2.d": "Local accounts secured with Argon2id, recovery codes, auto-lock, and encrypted backups.",
+    "road.r3.t": "One-click installers",
+    "road.r3.d": "Windows .msi, macOS .dmg, and Linux .AppImage so anyone can install Bokvakt in a minute.",
+    "faq.title": "Questions people ask",
+    "faq.sub": "Quick answers about Bokvakt, your data, and Swedish bookkeeping.",
+    "faq.q1": "Is Bokvakt really free?",
+    "faq.a1": "Yes. Bokvakt is open source under the MIT license. There's no paid version, no subscription, and no hidden fee. You can read the source code, change it, and share it if you want.",
+    "faq.q2": "Where does my data go?",
+    "faq.a2": "Nowhere. Everything stays in a local database on your computer. Bokvakt doesn't send anything to any server. You can back up your data as an encrypted .bokvakt file and move it wherever you want.",
+    "faq.q3": "Does it follow the Skatteverket rules?",
+    "faq.a3": "Bokvakt follows the Swedish moms rules in ML 1994:200 and maps everything to the SKV 4700 momsdeklaration boxes. It supports bokslutsmetoden too. You still review and file everything yourself in Skatteverket's e-services. Bokvakt helps prepare the numbers, it doesn't file them for you.",
+    "faq.q4": "Can I use it without internet?",
+    "faq.a4": "Yes, completely. Bokvakt is local-first. You can use it on a plane, at a cabin, or any time your internet is down. Backups can go to any folder you choose, including one you sync with a service you already use.",
+    "faq.q5": "Which languages does it support?",
+    "faq.a5": "Swedish and English. You can switch anytime with one click. Invoice PDFs and salary slips stay in Swedish, since those need to follow Swedish rules.",
+    "faq.q6": "Can I track Uber, Bolt, and similar income?",
+    "faq.a6": "Yes. You can record income from any platform such as Uber, Bolt, Foodora, Wolt, or something custom. Weekly or monthly totals are grouped automatically, and you can create invoices for the companies you provided services to.",
+    "faq.q7": "Do I need to be technical?",
+    "faq.a7": "No. Bokvakt installs like any other desktop app. The first time you open it, a short wizard walks you through the setup. If you can use a browser, you can use Bokvakt.",
+    "faq.q8": "Can I contribute or report bugs?",
+    "faq.a8": "Absolutely. The whole project is on GitHub at github.com/emalgari/bokVakt. You can open an issue if something's broken, or send a pull request if you want to help improve it.",
+    "cta.title": "Ready to give it a try?",
+    "cta.sub": "Download Bokvakt, set up your company in a few minutes, and start keeping your books the way you want.",
+    "cta.btn": "Download Bokvakt",
+    "footer.tagline": "A free, open source bookkeeping app for Swedish Enskild firma. Runs on your computer. No cloud, no subscriptions.",
+    "footer.product": "Product",
+    "footer.project": "Project",
+    "footer.legal": "Legal",
+    "footer.mit": "Open source under the MIT license."
+  },
+  sv: {
+    "nav.how": "Så funkar det",
+    "nav.features": "Funktioner",
+    "nav.shots": "Skärmbilder",
+    "nav.download": "Ladda ner",
+    "nav.faq": "Frågor och svar",
+    "nav.downloadBtn": "Ladda ner",
+    "hero.badge": "Gratis och öppen källkod, för alltid",
+    "hero.title1": "Bokföring för din",
+    "hero.title2": "Enskild firma",
+    "hero.title3": "utan molnet.",
+    "hero.lede": "Jag byggde Bokvakt för att jag var trött på molntjänster som håller din bokföring på någon annans server. Det här är ett vanligt skrivbordsprogram som du installerar på din dator. Hantera fakturor, moms, gig-intäkter och rapporter för Skatteverket. Din data stannar hos dig.",
+    "hero.download": "Ladda ner Bokvakt",
+    "hero.github": "Se källkoden på GitHub",
+    "trust.noCloud": "Inget moln",
+    "trust.noTelemetry": "Ingen spårning",
+    "trust.offline": "Fungerar offline",
+    "trust.bilingual": "Svenska och engelska",
+    "value.free": "Gratis för alltid",
+    "value.sub": "Månadskostnad",
+    "value.os": "Operativsystem",
+    "value.langs": "Språk",
+    "how.title": "Igång på tre minuter",
+    "how.sub": "Ingen Python att installera. Ingen terminal att öppna. Ladda bara ner appen, installera den som vilket annat program som helst, och börja bokföra.",
+    "how.s1.t": "Ladda ner och installera",
+    "how.s1.d": "Hämta installern för ditt operativsystem. Dubbelklicka. Klart. Bokvakt installeras som vilken vanlig app som helst, inga extra steg.",
+    "how.s2.t": "Ställ in ditt företag",
+    "how.s2.d": "En kort guide frågar efter dina företagsuppgifter, org.nr, momsnummer och bankinfo. Spara din återställningskod på ett säkert ställe och du är klar.",
+    "how.s3.t": "Börja bokföra",
+    "how.s3.d": "Lägg till intäkter och utgifter när de händer. Skapa fakturor. Bokvakt håller koll på moms, ditt löpande saldo och förbereder rapporter för Skatteverket.",
+    "features.title": "Allt du behöver för Enskild firma",
+    "features.sub": "Byggt för svenska enskilda firmor. Inget extra, inget du inte behöver, inget som låses bakom en betalvägg.",
+    "feat.invoice.t": "Svensk fakturering",
+    "feat.invoice.d": "Professionella PDF-fakturor med sekventiell numrering, OCR-referens och en korrekt momsredovisning. Rätt varje gång.",
+    "feat.vat.t": "Moms och VAT",
+    "feat.vat.d": "Utgående och ingående moms, kvartalsdeklarationer och SKV 4700-rutorna mappade åt dig. Moms beräknas på försäljning, aldrig på vinst.",
+    "feat.gig.t": "Gig-intäkter",
+    "feat.gig.d": "Registrera vecko- eller månadsintäkter från Uber, Bolt eller vilken plattform du än jobbar med. Se summor per plattform automatiskt.",
+    "feat.balance.t": "Löpande saldo",
+    "feat.balance.d": "Se direkt vad du tjänat, vad du fakturerat, vad som återstår att fakturera och ungefär vad du är skyldig i skatt.",
+    "feat.payroll.t": "Löner och lönespecifikationer",
+    "feat.payroll.d": "Om du har anställda kan du lägga till dem, generera svenska lönespecifikationer och hålla koll på arbetsgivaravgifter och A-skatt.",
+    "feat.security.t": "Integritet från grunden",
+    "feat.security.d": "Din data ligger i en lokal databas på din dator. Konton skyddas med Argon2id. Backuper är krypterade. Inget lämnar din maskin.",
+    "feat.reports.t": "Rapporter för Skatteverket",
+    "feat.reports.d": "Momsdeklarationens rutor, kvartalssammanställningar, resultaträkning och CSV-exporter du kan använda när du deklarerar.",
+    "feat.backup.t": "Krypterade backuper",
+    "feat.backup.d": "Enklicks-backuper sparade som .bokvakt-filer, krypterade med AES-256. Återställ dem var som helst, när som helst, på vilken dator som helst.",
+    "feat.multiuser.t": "Flera konton",
+    "feat.multiuser.d": "Skapa separata lokala konton med riktiga lösenord. Användbart om du delar datorn med familj eller kollegor.",
+    "shots.title": "Ett rent och fokuserat gränssnitt",
+    "shots.sub": "Designat för att inte störa dig när du arbetar.",
+    "shots.dash": "Översikt",
+    "shots.invoice": "Faktura-PDF",
+    "shots.vat": "Moms",
+    "shots.gig": "Gig-intäkter",
+    "shots.income": "Intäkter",
+    "shots.net": "Netto",
+    "shots.outvat": "Utgående moms",
+    "shots.invat": "Ingående moms",
+    "compliance.title": "Byggt på de riktiga svenska reglerna",
+    "compliance.p1": "Bokvakt följer den svenska momsregeln som många billiga verktyg gör fel på. Moms beräknas på beskattningsbar försäljning, aldrig på din vinst.",
+    "compliance.p2": "Alla beräkningar följer ML 1994:200 och mappas direkt till SKV 4700 momsdeklaration. Bokslutsmetoden stöds direkt.",
+    "compliance.c1": "Utgående moms på försäljning vid 25, 12 och 6 procent",
+    "compliance.c2": "Avdragsgill ingående moms på affärsutgifter",
+    "compliance.c3": "Ruta 49 nettomoms med hela kronor-regeln",
+    "compliance.c4": "Egna uttag hålls utanför resultaträkningen",
+    "compliance.c5": "Omvänd skattskyldighet för EU B2B och byggtjänster",
+    "compliance.c6": "Sekventiell fakturanumrering utan luckor",
+    "compliance.exTitle": "Ett snabbt exempel",
+    "compliance.k1": "Försäljning inklusive moms",
+    "compliance.k2": "Nettoförsäljning, moms borträknad",
+    "compliance.k3": "Utgående moms vid 25 procent",
+    "compliance.k4": "Utgifter, moms borträknad",
+    "compliance.k5": "Ingående moms att dra av",
+    "compliance.k6": "Moms att betala",
+    "compliance.k7": "Nettoresultat",
+    "compare.title": "Hur Bokvakt jämförs",
+    "compare.sub": "En snabb titt på vad du får med ett lokalt verktyg med öppen källkod jämfört med en typisk molntjänst.",
+    "compare.col": "Vad som spelar roll",
+    "compare.cloud": "Typisk molntjänst",
+    "compare.r2": "Var din data ligger",
+    "compare.r2a": "Din dator",
+    "compare.r2b": "Deras servrar",
+    "compare.r3": "Fungerar utan internet",
+    "compare.yes": "Ja",
+    "compare.no": "Nej",
+    "compare.r4": "Öppen källkod",
+    "compare.yes2": "Ja",
+    "compare.no2": "Nej",
+    "compare.r5": "Gig-intäkter",
+    "compare.yes3": "Ja",
+    "compare.maybe": "Sällan",
+    "compare.r6": "Löner och lönespecifikationer",
+    "compare.yes4": "Ja",
+    "compare.maybe2": "Oftast extra",
+    "compare.r7": "Momsdeklaration",
+    "compare.yes5": "Ja",
+    "compare.yes6": "Ja",
+    "compare.r8": "Både svenska och engelska",
+    "compare.yes7": "Ja",
+    "compare.maybe3": "Varierar",
+    "compare.r9": "Du kan läsa koden",
+    "compare.yes8": "Ja",
+    "compare.no3": "Nej",
+    "dl.title": "Ladda ner Bokvakt",
+    "dl.sub": "Välj ditt operativsystem. Installationen tar ungefär en minut. Ingen Python, ingen terminal, inga konfigurationsfiler att redigera.",
+    "dl.badge": "Ditt system",
+    "dl.win.desc": "Windows 10 eller 11, 64-bit",
+    "dl.win.btn": "Ladda ner för Windows",
+    "dl.win.hint": "Skapar en genväg i Startmenyn",
+    "dl.mac.desc": "macOS 12 eller senare, Intel och Apple Silicon",
+    "dl.mac.btn": "Ladda ner för macOS",
+    "dl.mac.hint": "Dra appen till mappen Program",
+    "dl.linux.desc": "Alla distributioner, plus paket för Debian och Ubuntu",
+    "dl.linux.btn": "Ladda ner för Linux",
+    "dl.linux.alt": "Eller hämta .deb-paketet",
+    "dl.verify": "Alla versioner publiceras på",
+    "dl.verify2": "med SHA-256-checksummor så att du kan verifiera det du laddat ner.",
+    "support.title": "Bokvakt är gratis och kommer alltid att vara det",
+    "support.text": "Jag byggde det här på min egen tid eftersom jag behövde det själv. Om det sparar dig tid eller pengar och du vill säga tack kan du köpa en kaffe till mig. Det hjälper till att täcka tiden jag lägger på att göra Bokvakt bättre.",
+    "support.btn": "Köp en kaffe till mig",
+    "support.star": "Stjärnmärk på GitHub",
+    "road.title": "Färdplan",
+    "road.sub": "Vad som är klart, vad jag jobbar med nu och vad som kommer härnäst.",
+    "road.tagDone": "Klart",
+    "road.tagNow": "Pågår",
+    "road.tagNext": "Kommer härnäst",
+    "road.r1.t": "Kärnbokföring",
+    "road.r1.d": "Intäkter, utgifter, fakturor, momsdeklarationer, resultaträkning, backuper och ett tvåspråkigt gränssnitt.",
+    "road.r2.t": "Konton och säkerhet",
+    "road.r2.d": "Lokala konton säkrade med Argon2id, återställningskoder, autolås och krypterade backuper.",
+    "road.r3.t": "Enklicks-installation",
+    "road.r3.d": "Windows .msi, macOS .dmg och Linux .AppImage så att vem som helst kan installera Bokvakt på en minut.",
+    "faq.title": "Frågor folk ställer",
+    "faq.sub": "Snabba svar om Bokvakt, din data och svensk bokföring.",
+    "faq.q1": "Är Bokvakt verkligen gratis?",
+    "faq.a1": "Ja. Bokvakt är öppen källkod under MIT-licens. Det finns ingen betalversion, ingen prenumeration och inga dolda avgifter. Du kan läsa källkoden, ändra den och dela den om du vill.",
+    "faq.q2": "Vart tar min data vägen?",
+    "faq.a2": "Ingenstans. Allt ligger i en lokal databas på din dator. Bokvakt skickar inget till någon server. Du kan säkerhetskopiera din data som en krypterad .bokvakt-fil och flytta den vart du vill.",
+    "faq.q3": "Följer den Skatteverkets regler?",
+    "faq.a3": "Bokvakt följer de svenska momsreglerna i ML 1994:200 och mappar allt till SKV 4700 momsdeklarationens rutor. Bokslutsmetoden stöds också. Du granskar och deklarerar fortfarande allt själv i Skatteverkets e-tjänster. Bokvakt hjälper till att förbereda siffrorna, den deklarerar inte åt dig.",
+    "faq.q4": "Kan jag använda den utan internet?",
+    "faq.a4": "Ja, helt och hållet. Bokvakt är lokalt först. Du kan använda den på ett flygplan, i en stuga eller när internet är nere. Backuper kan sparas i vilken mapp du vill, inklusive en du synkar med en tjänst du redan använder.",
+    "faq.q5": "Vilka språk stöds?",
+    "faq.a5": "Svenska och engelska. Du kan växla när som helst med ett klick. Faktura-PDF:er och lönespecifikationer hålls på svenska eftersom de behöver följa svenska regler.",
+    "faq.q6": "Kan jag hantera Uber, Bolt och liknande intäkter?",
+    "faq.a6": "Ja. Du kan registrera intäkter från vilken plattform som helst, till exempel Uber, Bolt, Foodora, Wolt eller något eget. Vecko- eller månadssummor grupperas automatiskt och du kan skapa fakturor till företagen du utfört tjänster åt.",
+    "faq.q7": "Behöver jag vara teknisk?",
+    "faq.a7": "Nej. Bokvakt installeras som vilken annan app som helst. Första gången du öppnar den guidar en kort guide dig genom installationen. Om du kan använda en webbläsare kan du använda Bokvakt.",
+    "faq.q8": "Kan jag bidra eller rapportera buggar?",
+    "faq.a8": "Absolut. Hela projektet finns på GitHub på github.com/emalgari/bokVakt. Du kan öppna ett ärende om något är trasigt, eller skicka en pull request om du vill hjälpa till att förbättra det.",
+    "cta.title": "Redo att testa?",
+    "cta.sub": "Ladda ner Bokvakt, ställ in ditt företag på några minuter och börja föra din bokföring precis som du vill.",
+    "cta.btn": "Ladda ner Bokvakt",
+    "footer.tagline": "En gratis bokföringsapp med öppen källkod för svensk enskild firma. Körs på din dator. Inget moln, inga prenumerationer.",
+    "footer.product": "Produkt",
+    "footer.project": "Projekt",
+    "footer.legal": "Juridik",
+    "footer.mit": "Öppen källkod under MIT-licens."
+  }
+};
+
+var currentLang = "en";
+
+function setLanguage(lang) {
+  if (!I18N[lang]) return;
+  currentLang = lang;
+  try { localStorage.setItem("bokvakt-lang", lang); } catch (e) {}
+  document.documentElement.lang = lang === "sv" ? "sv" : "en";
+  var dict = I18N[lang];
+  var nodes = document.querySelectorAll("[data-i18n]");
+  for (var i = 0; i < nodes.length; i++) {
+    var key = nodes[i].getAttribute("data-i18n");
+    if (dict[key]) nodes[i].textContent = dict[key];
+  }
+  var enBtn = document.getElementById("lang-en");
+  var svBtn = document.getElementById("lang-sv");
+  if (enBtn) enBtn.classList.toggle("active", lang === "en");
+  if (svBtn) svBtn.classList.toggle("active", lang === "sv");
+  updateHeroDownloadLabel();
+}
+
+function detectOS() {
+  var ua = navigator.userAgent || "";
+  var platform = (navigator.platform || "").toLowerCase();
+  if (/win/i.test(platform) || /windows/i.test(ua)) return "windows";
+  if (/mac/i.test(platform) || /macintosh|mac os x/i.test(ua)) return "mac";
+  if (/linux|android/i.test(platform) || /linux/i.test(ua)) return "linux";
+  return null;
+}
+
+var OS_LABELS = {
+  windows: { en: "Download for Windows", sv: "Ladda ner för Windows" },
+  mac:     { en: "Download for macOS",   sv: "Ladda ner för macOS" },
+  linux:   { en: "Download for Linux",   sv: "Ladda ner för Linux" }
+};
+
+function updateHeroDownloadLabel() {
+  var os = detectOS();
+  var label = document.getElementById("heroDownloadLabel");
+  if (!label) return;
+  if (os && OS_LABELS[os]) {
+    label.textContent = OS_LABELS[os][currentLang];
+  } else {
+    label.textContent = currentLang === "sv" ? "Ladda ner Bokvakt" : "Download Bokvakt";
+  }
+}
+
+function setupOsDetection() {
+  var os = detectOS();
+  if (!os) return;
+  var card = document.querySelector('.os-card[data-os="' + os + '"]');
+  if (card) card.classList.add("detected");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Load saved language
+  try {
+    var saved = localStorage.getItem("bokvakt-lang");
+    if (saved === "sv" || saved === "en") currentLang = saved;
+  } catch (e) {}
+
+  // Mobile menu toggle
+  var menuBtn = document.getElementById("menuBtn");
+  var mobileMenu = document.getElementById("mobileMenu");
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener("click", function () {
+      var open = mobileMenu.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    var links = mobileMenu.querySelectorAll("a");
+    for (var i = 0; i < links.length; i++) {
+      links[i].addEventListener("click", function () {
+        mobileMenu.classList.remove("open");
+        menuBtn.setAttribute("aria-expanded", "false");
+      });
+    }
+  }
+
+  // Year
+  var yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // Back to top
+  var backTop = document.getElementById("backTop");
+  if (backTop) {
+    window.addEventListener("scroll", function () {
+      backTop.classList.toggle("show", window.scrollY > 600);
+    }, { passive: true });
+    backTop.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  setupOsDetection();
+  setLanguage(currentLang);
+});
+</script>
 </body>
 </html>
